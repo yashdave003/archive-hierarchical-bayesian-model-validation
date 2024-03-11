@@ -6,6 +6,7 @@ from scipy import integrate, interpolate
 from scipy.stats import gengamma, laplace, norm
 import matplotlib.pyplot as plt
 import pickle
+import os
 
 def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, scale = 1, x_interval = -1):
 
@@ -99,8 +100,11 @@ def add_cdfs(pickle_name, r_range, eta_range, check_redundant = False, n_samples
     check_redundant: if True, checks if key already exists in dictionary 
     n_samples: number of samples used when computing prior_cdf
     '''
-    with open(f'{pickle_name}.pickle', 'rb') as handle:
-        cdfs = pickle.load(handle)
+    if os.path.isfile(pickle_name+'.pickle'):
+        with open(f'{pickle_name}.pickle', 'rb') as handle:
+            cdfs = pickle.load(handle)
+    else:
+        cdfs = dict()
     n = len(r_range)*len(eta_range)
     i = 0
     for r in r_range:
