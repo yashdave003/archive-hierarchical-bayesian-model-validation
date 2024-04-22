@@ -28,11 +28,16 @@ def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, n_tail = 5, 
     '''
     
     beta = (eta + 1.5)/r 
-    var_prior = scale * scipy.special.gamma((eta + 1.5 + 1/2)/r)/scipy.special.gamma(beta)
-    x_max = min(100, np.round(var_prior/tail_bound)) # introduced additional bound in case chebyshev is unwieldy
+    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
+    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
+    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
+    if cheby <= 99:
+        n_tail = 0
+        print("No Tail")
+        
     xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
-    xs = np.append(np.linspace(-(x_max+100), -(x_max+20), n_tail), xs)
-    xs = np.append(xs, np.linspace(x_max + 20, x_max + 100, n_tail))
+    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
+    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
     prior_pdf = np.full(xs.shape, np.nan)
 
     # Loop over xs
@@ -70,11 +75,16 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, s
     '''
     
     beta = (eta + 1.5)/r 
-    var_prior = scale * scipy.special.gamma((eta + 1.5 + 1/2)/r)/scipy.special.gamma(beta)
-    x_max = min(100, np.round(var_prior/tail_bound)) # introduced additional bound in case chebyshev is unwieldy
+    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
+    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
+    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
+    if cheby <= 99:
+        n_tail = 0
+        print("No Tail")
+        
     xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
-    xs = np.append(np.linspace(-(x_max+100), -(x_max+20), n_tail), xs)
-    xs = np.append(xs, np.linspace(x_max + 20, x_max + 100, n_tail))
+    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
+    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
     prior_pdf = np.full(xs.shape, np.nan)
 
     # Loop over xs
