@@ -107,8 +107,9 @@ def add_cdfs(r_range, eta_range, n_samples = 10000, scipy_int=True, folder_name=
     i = 0
     for r in r_range:
         r_cdf = dict()
+        r = round_to_sigfigs(r, 3)
         for eta in eta_range:
-            (r, eta) = (round_to_sigfigs(r, 3), round_to_sigfigs(eta, 3))
+            eta = round_to_sigfigs(eta, 3)
             if ((r, eta) in cdfs_completed):
                 continue
             print(f'{(r, eta)}, {i} of {n}')
@@ -117,7 +118,8 @@ def add_cdfs(r_range, eta_range, n_samples = 10000, scipy_int=True, folder_name=
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
-        with open(f'{FOLDER_PATH}/{r}_{min(eta_range)}-{max(eta_range)}.pickle', 'wb') as handle:
+        min_eta, max_eta = round_to_sigfigs(min(eta_range), 3), round_to_sigfigs(max(eta_range), 3)
+        with open(f'{FOLDER_PATH}/{r}_{min_eta}-{max_eta}.pickle', 'wb') as handle:
             pickle.dump(r_cdf, handle)
 
 
@@ -132,7 +134,7 @@ def add_cdfs(r_range, eta_range, n_samples = 10000, scipy_int=True, folder_name=
 # Run it a second time, and since the CDFs are already computed, it should not take any time to run
 all_eta = np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
 all_r = np.arange(0.6, 5, 0.1)
-num_points = 100000
+num_points = 100
 add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='')
 
 if USE_MATLAB:
