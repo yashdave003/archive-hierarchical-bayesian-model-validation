@@ -75,7 +75,10 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, s
     poly = interpolate.CubicSpline(x = xs, y = prior_cdf)
 
     # TODO: normalize based on last value in CDF
-    # add assert statements to act as unit tests
+
+    # TODO: add assert statements to act as unit tests
+    # assert area is 1 using pdf
+    # assert last point is 1
 
     return poly
 
@@ -122,13 +125,8 @@ def add_cdfs(r_range, eta_range, n_samples = 10000, scipy_int=True, folder_name=
         with open(f'{FOLDER_PATH}/{r}_{min_eta}-{max_eta}.pickle', 'wb') as handle:
             pickle.dump(r_cdf, handle)
 
-
-# all_eta = np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
-# all_eta = np.append(np.arange(0.2, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
-# all_r = np.arange(0.2, 2, 0.1)
-# add_cdfs(folder_name='', r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB))
-
-# Test to see file directory set up is correct
+# TODO:
+# First, Test to see file directory set up is correct with num_points = 100
 # Expected outcome: a new folder within CDFs is created with name 'test_not_mtlb_1000_0.2-0.8' 
 # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle containing two pickles (grouped by r)
 # Run it a second time, and since the CDFs are already computed, it should not take any time to run
@@ -136,6 +134,12 @@ all_eta = np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i 
 all_r = np.arange(0.6, 5, 0.1)
 num_points = 100
 add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='')
+
+# Then, change USE_MATLAB to True and run below:
+all_eta = np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
+all_r = np.arange(0.1, 0.7, 0.1)
+num_points = 100000
+add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='mtlb')
 
 if USE_MATLAB:
     eng.quit()
