@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pickle
 import os
 
-os.chdir('C:\\Users\\yashd\\Desktop\\hierarchical-bayesian-model-validation\\testing-framework')
+#os.chdir('C:\\Users\\yashd\\Desktop\\hierarchical-bayesian-model-validation\\testing-framework')
 
 def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, n_tail = 5, scale = 1):
 

@@ -33,7 +33,7 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, s
     cheby = np.sqrt(np.round(var_prior/(tail_bound)))
     
     x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
-    if cheby <= 99:
+    if cheby < 120:
         n_tail = 0
         print("No Tail")
     
@@ -64,7 +64,7 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, s
 
     prior_cdf = np.zeros_like(prior_pdf)
     for i in range(len(xs) - 1):
-        prior_cdf[i] = np.trapz(prior_pdf[:i+1], xs[:i+1]) 
+        prior_cdf[i] = np.trapz(prior_pdf[:i+1], xs[:i+1])
     prior_cdf = np.append(prior_cdf[:-1], 1)
     poly = interpolate.CubicSpline(x = xs, y = prior_cdf)
     return poly
