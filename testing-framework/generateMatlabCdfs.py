@@ -1,4 +1,4 @@
-import matlab.engine 
+
 import numpy as np
 import pandas as pd
 import scipy
@@ -7,8 +7,14 @@ from scipy import integrate, interpolate
 from scipy.stats import gengamma, laplace, norm, kstwo, ks_1samp
 import matplotlib.pyplot as plt
 import pickle
+from pathlib import Path
 import os
-eng = matlab.engine.connect_matlab()
+
+USE_MATLAB = False
+
+if USE_MATLAB:
+    import matlab.engine 
+    eng = matlab.engine.connect_matlab()
 
 
 def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, scale = 1, scipy_int=True):
@@ -67,38 +73,48 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, s
         prior_cdf[i] = np.trapz(prior_pdf[:i+1], xs[:i+1])
     prior_cdf = np.append(prior_cdf[:-1], 1)
     poly = interpolate.CubicSpline(x = xs, y = prior_cdf)
+
     return poly
 
+def round_to_2_sigfigs(x):
+    if x == np.zeros_like(x):
+        return 0
+    return np.round(x, -int(np.floor(np.log10(abs(x)))-1))
 
-
-
-def add_cdfs(pickle_name, r_range, eta_range, check_redundant = False, n_samples = 10000):
+def add_cdfs(folder_name, r_range, eta_range, n_samples = 10000, scipy_int=True):
     '''
-    pickle_name: Name of pickle file that stores dictionary of cdfs, does not include the '.pickle'
+    folder_name: Name of directory that contains pickles of dictionaries of cdfs
     r_range: range of r values, assumes use of np.arange
     eta_range: range of eta values, assumes use of np.arange
     check_redundant: if True, checks if key already exists in dictionary
     n_samples: number of samples used when computing prior_cdf
     '''
-    if os.path.isfile(f'CDFs/{pickle_name}.pickle'):
-        with open(f'CDFs/{pickle_name}.pickle', 'rb') as handle:
-            cdfs = pickle.load(handle)
+    FOLDER_PATH = f'CDFs\\{folder_name}_{n_samples}_{min(eta_range)}-{max(eta_range)}\\'
+    cdfs_completed = set()
+    if os.path.isdir(FOLDER_PATH):
+        
+        for pkl in os.listdir(FOLDER_PATH):
+            with open(f'{FOLDER_PATH}{pkl}', 'rb') as handle:
+                next_cdf = pickle.load(handle)
+            cdfs_completed.update(next_cdf.keys())
     else:
-        cdfs = dict()
+        Path(os.path.join(os.getcwd(), FOLDER_PATH)).mkdir()
+
     n = len(r_range)*len(eta_range)
     i = 0
     for r in r_range:
+        r_cdf = dict()
         for eta in eta_range:
             (r, eta) = (round_to_2_sigfigs(r), round_to_2_sigfigs(eta))
-            if check_redundant:
-                if ((r, eta) in cdfs):
-                    continue
+            if ((r, eta) in cdfs_completed):
+                continue
             print(f'{(r, eta)}, {i} of {n}')
             i += 1
-            cdfs[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  n_tail = 100, tail_bound = 0.01, scipy_int=False)
-        # Store pickle every outer loop iteration
-        with open(f'CDFs/{pickle_name}.pickle', 'wb') as handle:
-            pickle.dump(cdfs, handle)
+            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  n_tail = 100, tail_bound = 0.01, scipy_int=scipy_int)
+
+        # Store pickle every outer loop iteration as its own file
+        with open(f'{FOLDER_PATH}/{r}.pickle', 'wb') as handle:
+            pickle.dump(r_cdf, handle)
 
 
 def round_to_2_sigfigs(x):
@@ -108,11 +124,19 @@ def round_to_2_sigfigs(x):
 
 
 
-all_eta = np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
-#all_eta = np.append(np.arange(0.2, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
-all_r = np.arange(0.2, 2, 0.1)
-num_points = 10000
+# all_eta = np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
+# all_eta = np.append(np.arange(0.2, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
+# all_r = np.arange(0.2, 2, 0.1)
+# add_cdfs(folder_name='', r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB))
 
-add_cdfs(f'cdfs_mtlb_{num_points}_{min(all_r)}-{max(all_r)}_{min(all_eta)}-{max(all_eta)}', all_r, all_eta, True, num_points)
+# Test to see file directory set up is correct
+# Expected outcome: a new folder within CDFs is created with name 'test_not_mtlb_1000_0.2-0.8' 
+# <folder_name>_<num_samples>_<min(eta)>_<max_eta> containing two pickles (grouped by r)
+# Run it a second time, and since the CDFs are already computed, it should not take any time to run
+# all_eta = np.arange(0.2, 1, 0.2)
+# all_r = np.arange(1, 2, 0.5)
+# num_points = 10000
+# add_cdfs(folder_name='test_not_mtlb', r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB))
 
-eng.quit()
+if USE_MATLAB:
+    eng.quit()
