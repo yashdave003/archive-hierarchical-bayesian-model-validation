@@ -18,7 +18,7 @@ if USE_MATLAB:
 
 print("RUN FROM hierarchical-bayesian-model-validation/testing-framework directory")
 
-def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, scale = 1, scipy_int=True, support = False):
+def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = False):
 
     '''
     Returns PPoly-type function that approximates the prior CDF of the signal x
@@ -38,6 +38,9 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, s
     beta = (eta + 1.5)/r 
     var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
     cheby = np.sqrt(np.round(var_prior/(tail_bound)))
+    
+
+    n_tail = int(n_samples*tail_percent)
     
     x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
     if cheby < 120:
@@ -79,13 +82,16 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, s
     zero_padding = np.zeros(k)
     ones_padding = np.ones(k)
 
+    pad_max = max(10e5, np.round(cheby ** 2))
+
+
     prior_cdf = np.append(zero_padding, prior_cdf)
-    xs = np.append(np.linspace(-10000, xs[0] - 1e-5, k), xs)
+    xs_pad = np.append(np.linspace(-pad_max, xs[0] - 1e-5, k), xs)
 
     prior_cdf = np.append(prior_cdf, ones_padding)
-    xs = np.append(xs, np.linspace(xs[-1] + 1e-5, 10000, k))
+    xs_pad = np.append(xs_pad, np.linspace(xs[-1] + 1e-5, pad_max, k))
 
-    poly = interpolate.CubicSpline(x = xs, y = prior_cdf)
+    poly = interpolate.CubicSpline(x = xs_pad, y = prior_cdf)
 
     print(poly(1000000))
 
