@@ -168,7 +168,7 @@ def visualize_cdfs(obs_x, r, eta, n_samples = 1000, all_cdfs = None, save_plot :
     location = result.statistic_location
     emp_cdf_at_loc = np.searchsorted(obs_x, location, side='right') / n
     true_cdf_at_loc = null_cdf(location)
-    plt.vlines(location, emp_cdf_at_loc, true_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}')
+    plt.vlines(location, emp_cdf_at_loc, true_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}', color = 'xkcd:bright red')
     
     plt.title(f'Empirical CDF vs True CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
     plt.legend()

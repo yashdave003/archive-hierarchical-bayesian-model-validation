@@ -1,3 +1,5 @@
+import os
+os.setcwd()
 from utilities import *
 data_dict = pd.read_pickle('../data/Panoptic Agriculture/Transformed Dataset/Panoptic_Data_Dict_Normalized.pickle')
 cdfs_name = 'updated_1000_0.1-4.9_0.0-3.8'

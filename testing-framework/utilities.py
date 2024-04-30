@@ -4,11 +4,9 @@ import scipy
 import seaborn as sns
 from scipy import integrate, interpolate  
 from scipy.stats import gengamma, laplace, norm, kstwo, ks_1samp
-import matplotlib.pyplot as plt
+from pathlib import Path
 import pickle
 import os
-
-#os.chdir('C:\\Users\\yashd\\Desktop\\hierarchical-bayesian-model-validation\\testing-framework')
 
 def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, n_tail = 5, scale = 1):
 
@@ -28,11 +26,16 @@ def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, n_tail = 5, 
     '''
     
     beta = (eta + 1.5)/r 
-    var_prior = scale * scipy.special.gamma((eta + 1.5 + 1/2)/r)/scipy.special.gamma(beta)
-    x_max = min(100, np.round(var_prior/tail_bound)) # introduced additional bound in case chebyshev is unwieldy
+    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
+    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
+    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
+    if cheby <= 99:
+        n_tail = 0
+        print("No Tail")
+        
     xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
-    xs = np.append(np.linspace(-(x_max+100), -(x_max+20), n_tail), xs)
-    xs = np.append(xs, np.linspace(x_max + 20, x_max + 100, n_tail))
+    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
+    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
     prior_pdf = np.full(xs.shape, np.nan)
 
     # Loop over xs
@@ -70,11 +73,16 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, s
     '''
     
     beta = (eta + 1.5)/r 
-    var_prior = scale * scipy.special.gamma((eta + 1.5 + 1/2)/r)/scipy.special.gamma(beta)
-    x_max = min(100, np.round(var_prior/tail_bound)) # introduced additional bound in case chebyshev is unwieldy
+    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
+    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
+    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
+    if cheby <= 99:
+        n_tail = 0
+        print("No Tail")
+        
     xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
-    xs = np.append(np.linspace(-(x_max+100), -(x_max+20), n_tail), xs)
-    xs = np.append(xs, np.linspace(x_max + 20, x_max + 100, n_tail))
+    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
+    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
     prior_pdf = np.full(xs.shape, np.nan)
 
     # Loop over xs
@@ -128,40 +136,104 @@ def cartesian_product(*arrays):
         arr[...,i] = a
     return arr.reshape(-1, la)
 
-def round_to_2_sigfigs(x):
+def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, scale = 1, scipy_int=True):
+
+    '''
+    Returns PPoly-type function that approximates the prior CDF of the signal x
+    r : shape parameter controlling rate of exponentional decay
+    eta : controls roundedness of peak, and hence sparsity
+    scale : scale parameter
+    n_samples : number of points used to numerically approximate CDF
+    tail_bound : Uses Chebyshev's Inequality to bound the region of the CDF that is outside the coverage of xs
+    n_tail : Sets the number of points tha lie outside the coverage of xs to approximate tails if need be
+
+    Usage:
+    new_cdf = compute_prior_cdf(r = 0.1, eta = 0.001)
+    new_cdf(0.5343) returns CDF
+    Can also accept arrays
+    '''
+    
+    beta = (eta + 1.5)/r 
+    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
+    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
+    
+    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
+    if cheby < 120:
+        n_tail = 0
+        print("No Tail")
+    
+
+    xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
+    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
+    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
+    prior_pdf = np.full(xs.shape, np.nan)
+
+    # Loop over xs
+    for j, x in enumerate(xs):
+
+        # Define integrands
+        def gauss_density(theta):
+            return (1./(np.sqrt(2*np.pi)*theta)) * np.exp(-0.5*(x/theta)**2)
+
+        def gen_gamma_density(theta):
+            return (r/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
+
+        def integrand(theta):
+            return gauss_density(theta) * gen_gamma_density(theta)
+
+        # Integrate 
+        if scipy_int:
+            prior_pdf[j] = integrate.quad(integrand, 0, np.inf)[0]
+        else:
+            prior_pdf[j] = eng.testIntegrals(float(r), float(eta), float(x), nargout=1)
+
+    prior_cdf = np.zeros_like(prior_pdf)
+    for i in range(len(xs) - 1):
+        prior_cdf[i] = np.trapz(prior_pdf[:i+1], xs[:i+1])
+    prior_cdf = np.append(prior_cdf[:-1], 1)
+    poly = interpolate.CubicSpline(x = xs, y = prior_cdf)
+
+    return poly
+
+def round_to_sigfigs(x, num_sigfigs=2):
     if x == np.zeros_like(x):
         return 0
-    return np.round(x, -int(np.floor(np.log10(abs(x)))-1))
+    return np.round(x, -int(np.floor(np.log10(abs(x)))-(num_sigfigs-1)))
 
-def add_cdfs(pickle_name, r_range, eta_range, check_redundant = False, n_samples = 10000):
+def add_cdfs(folder_name, r_range, eta_range, n_samples = 10000, scipy_int=True):
     '''
-    pickle_name: Name of pickle file that stores dictionary of cdfs, does not include the '.pickle'
+    folder_name: Name of directory that contains pickles of dictionaries of cdfs
     r_range: range of r values, assumes use of np.arange
-    eta_range: range of eta values, assumes use of np.arange 
-    check_redundant: if True, checks if key already exists in dictionary 
+    eta_range: range of eta values, assumes use of np.arange
+    check_redundant: if True, checks if key already exists in dictionary
     n_samples: number of samples used when computing prior_cdf
     '''
-    if os.path.isfile(f'CDFs/{pickle_name}.pickle'):
-        with open(f'CDFs/{pickle_name}.pickle', 'rb') as handle:
-            cdfs = pickle.load(handle)
+    FOLDER_PATH = f'CDFs\\{folder_name}_{n_samples}_{min(eta_range)}-{max(eta_range)}\\'
+    cdfs_completed = set()
+    if os.path.isdir(FOLDER_PATH):
+        
+        for pkl in os.listdir(FOLDER_PATH):
+            with open(f'{FOLDER_PATH}{pkl}', 'rb') as handle:
+                next_cdf = pickle.load(handle)
+            cdfs_completed.update(next_cdf.keys())
     else:
-        cdfs = dict()
+        Path(os.path.join(os.getcwd(), FOLDER_PATH)).mkdir()
+
     n = len(r_range)*len(eta_range)
     i = 0
     for r in r_range:
+        r_cdf = dict()
         for eta in eta_range:
-            
-            (r, eta) = (round_to_2_sigfigs(r), round_to_2_sigfigs(eta))
-            if check_redundant:
-                if ((r, eta) in cdfs):
-                    continue
+            (r, eta) = (round_to_sigfigs(r), round_to_sigfigs(eta))
+            if ((r, eta) in cdfs_completed):
+                continue
             print(f'{(r, eta)}, {i} of {n}')
             i += 1
-            cdfs[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples)
+            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  n_tail = 100, tail_bound = 0.01, scipy_int=scipy_int)
 
-        # Store pickle every outer loop iteration
-        with open(f'CDFs/{pickle_name}.pickle', 'wb') as handle:
-            pickle.dump(cdfs, handle) 
+        # Store pickle every outer loop iteration as its own file
+        with open(f'{FOLDER_PATH}/{r}.pickle', 'wb') as handle:
+            pickle.dump(r_cdf, handle)
 
 def extract_single_dist(all_dist_df, base_r, base_eta):
     return all_dist_df[(all_dist_df['base_r'] == base_r) & (all_dist_df['base_eta'] == base_eta)].drop(['base_r', 'base_eta'], axis = 1)
@@ -224,5 +296,24 @@ def val_df_fixed_num(x, num_samples, df):
     val_df['num_samples'] = num_samples * np.ones(val_df.shape[0])
     return val_df
 
+def combine_pickles(dir_name):
+    CDFs_DIR = os.path.join(os.getcwd(), "CDFs")
+    combined_path = f'{os.path.join(CDFs_DIR, f"combined_{dir_name}.pickle")}'
+    if os.path.isfile(combined_path):
+        with open(combined_path, 'rb') as handle:
+            cdfs = pickle.load(handle)
+        return cdfs
+    else:
+        pickles = os.listdir(os.path.join(CDFs_DIR, dir_name))
+        cdfs = dict()
+        for pkl in pickles:
+            
+            pkl_path = os.path.join(CDFs_DIR, f'{dir_name}\\{pkl}')
+            with open(pkl_path, 'rb') as handle:
+                new_cdf = pickle.load(handle)
+                cdfs = cdfs | new_cdf
+        with open(combined_path, 'wb') as handle:
+            pickle.dump(cdfs, handle)
+        return cdfs
 
         
