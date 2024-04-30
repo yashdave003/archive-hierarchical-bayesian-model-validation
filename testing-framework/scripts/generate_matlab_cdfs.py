@@ -93,7 +93,7 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent 
 
     poly = interpolate.CubicSpline(x = xs_pad, y = prior_cdf)
 
-    print(poly(1000000))
+    print(poly(-1e20), poly(1e20))
 
     if support:
         return xs, poly
@@ -136,7 +136,7 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
                 continue
             print(f'{(r, eta)}, {i} of {n}')
             i += 1
-            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  n_tail = int(0.01*n_samples), tail_bound = 0.01, scipy_int=scipy_int, support=False)
+            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, support=False)
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
@@ -164,11 +164,25 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
 # # num_points = 100000
 # # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='mtlb')
 
-# LAYER 4
-# all_r = np.arange(0.79, 0.81, 0.001)
-# all_eta = np.arange(0.15, 0.25, 0.01)
+############################################################
+
+# LAYER 2
+all_r = np.arange(0.55, 0.65, 0.01)
+all_eta = np.arange(3.1, 3.3, 0.01)
+num_points = 10000
+add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer2_')
+
+# LAYER 3
+# all_r = np.arange(0.69, 0.72, 0.001)
+# all_eta = np.arange(3.55, 3.63, 0.01)
 # num_points = 10000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer4_')
+# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer3_')
+
+# LAYER 4
+all_r = np.arange(0.79, 0.81, 0.001)
+all_eta = np.arange(2.9, 3.1, 0.01)
+num_points = 10000
+add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer4_')
 
 # LAYER 5
 # all_r = np.arange(0.89, 0.91, 0.001)
@@ -176,19 +190,11 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
 # num_points = 10000
 # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer5_')
 
-
 # LAYER 6
 # all_r = np.arange(0.95, 1.05, 0.01)
 # all_eta = np.arange(0.15, 0.25, 0.01)
 # num_points = 10000
 # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer6_')
-
-# LAYER 3
-all_r = np.arange(0.69, 0.72, 0.001)
-all_eta = np.arange(3.55, 3.63, 0.01)
-num_points = 10000
-add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer3_')
-
 
 
 if USE_MATLAB:
