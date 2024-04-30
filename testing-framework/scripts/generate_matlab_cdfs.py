@@ -67,7 +67,7 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent 
         if scipy_int:
             prior_pdf[j] = integrate.quad(integrand, 0, np.inf)[0]
         else:
-            prior_pdf[j] = eng.testIntegrals(float(r), float(eta), float(x), nargout=1)
+            prior_pdf[j] = eng.compute_prior(float(r), float(eta), float(x), nargout=1)
 
     prior_cdf = np.zeros_like(prior_pdf)
     prior_cdf[0] = 0
@@ -76,6 +76,9 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent 
 
         # Alternative with Simpson's: prior_cdf[i] = integrate.simps(prior_pdf[:i+1], xs[:i+1])
     normalizer = prior_cdf[-1]
+    first = prior_cdf[1]
+    assert 1.05 > normalizer > 0.95
+    assert 0.05 > first > -0.05
     prior_cdf = prior_cdf/normalizer   
 
     k = int(0.01*n_samples)
