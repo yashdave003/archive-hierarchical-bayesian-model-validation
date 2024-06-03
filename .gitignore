@@ -1,6 +1,10 @@
-
 testing-framework/todo.md
 testing-framework/updated_100000.pickle
 data/Panoptic Agriculture/Transformed Dataset/Panoptic_Data_Dict_Normalized.pickle
 pickles/
 sandbox/
+testing-framework/CDFs/cdfs_mtlb_10000_0.2-1.9000000000000006_0.0-3.8000000000000003.pickle
+Wavelet Transform/.DS_Store
+.DS_Store
+testing-framework/__pycache__/utilities.cpython-38.pyc
+testing-framework/CDFs/test_1000/

@@ -171,10 +171,11 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
 
 # # # Then, change USE_MATLAB to True at the top of the notebook and run below:
 
-all_eta = np.append(np.arange(0, 2.2, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
-all_r = np.arange(0.2, 0.3, 0.1)
+all_eta = np.append(np.arange(0.1, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
+# all_eta = np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-3, -1)]))
+all_r = np.arange(0.3, 0.7, 0.1)
 num_points = 10000
-add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='mtlb')
+add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='mtlb_')
 
 # ############################################################
 
