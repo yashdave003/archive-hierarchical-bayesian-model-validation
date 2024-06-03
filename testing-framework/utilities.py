@@ -7,107 +7,9 @@ from scipy.stats import gengamma, laplace, norm, kstwo, ks_1samp
 from pathlib import Path
 import pickle
 import os
-
-def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, n_tail = 5, scale = 1):
-
-    '''
-    Returns support and pdf for prior distribution
-    r : shape parameter controlling rate of exponentional decay
-    eta : controls roundedness of peak, and hence sparsity
-    scale : scale parameter
-    n_samples : number of points used to numerically approximate CDF
-    tail_bound : Uses Chebyshev's Inequality to bound the region of the CDF that is outside the coverage of xs
-    n_tail : Sets the number of points tha lie outside the coverage of xs to approximate tails if need be
-
-    Usage:
-    new_pdf = compute_prior_cdf(r = 0.1, eta = 0.001)
-    new_pdf(0.5343) returns CDF
-    Can also accept arrays
-    '''
-    
-    beta = (eta + 1.5)/r 
-    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
-    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
-    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
-    if cheby <= 99:
-        n_tail = 0
-        print("No Tail")
-        
-    xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
-    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
-    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
-    prior_pdf = np.full(xs.shape, np.nan)
-
-    # Loop over xs
-    for j, x in enumerate(xs):
-
-        # Define integrands
-        def gauss_density(theta):
-            return (1./(np.sqrt(2*np.pi)*theta)) * np.exp(-0.5*(x/theta)**2)
-
-        def gen_gamma_density(theta):
-            return (r/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
-
-        def integrand(theta):
-            return gauss_density(theta) * gen_gamma_density(theta)
-
-        # Integrate 
-        prior_pdf[j] = integrate.quad(integrand, 0, np.inf)[0]
-    return xs, prior_pdf
-
-def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, scale = 1):
-
-    '''
-    Returns PPoly-type function that approximates the prior CDF of the signal x
-    r : shape parameter controlling rate of exponentional decay
-    eta : controls roundedness of peak, and hence sparsity
-    scale : scale parameter
-    n_samples : number of points used to numerically approximate CDF
-    tail_bound : Uses Chebyshev's Inequality to bound the region of the CDF that is outside the coverage of xs
-    n_tail : Sets the number of points tha lie outside the coverage of xs to approximate tails if need be
-
-    Usage:
-    new_cdf = compute_prior_cdf(r = 0.1, eta = 0.001)
-    new_cdf(0.5343) returns CDF
-    Can also accept arrays
-    '''
-    
-    beta = (eta + 1.5)/r 
-    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
-    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
-    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
-    if cheby <= 99:
-        n_tail = 0
-        print("No Tail")
-        
-    xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
-    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
-    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
-    prior_pdf = np.full(xs.shape, np.nan)
-
-    # Loop over xs
-    for j, x in enumerate(xs):
-
-        # Define integrands
-        def gauss_density(theta):
-            return (1./(np.sqrt(2*np.pi)*theta)) * np.exp(-0.5*(x/theta)**2)
-
-        def gen_gamma_density(theta):
-            return (r/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
-
-        def integrand(theta):
-            return gauss_density(theta) * gen_gamma_density(theta)
-
-        # Integrate 
-        prior_pdf[j] = integrate.quad(integrand, 0, np.inf)[0]
-
-    prior_cdf = np.zeros_like(prior_pdf)
-    for i in range(len(xs) - 1):
-        prior_cdf[i] = np.trapz(prior_pdf[:i+1], xs[:i+1]) 
-    prior_cdf = np.append(prior_cdf[:-1], 1)
-
-    poly = interpolate.CubicSpline(x = xs, y = prior_cdf)
-    return poly
+import pywt
+import pywt.data
+from PIL import Image
 
 def sample_prior(r, eta, size=1):
     '''
@@ -120,120 +22,10 @@ def sample_prior(r, eta, size=1):
     x = np.random.normal(scale = vars, size=size)
     return x
 
-def sample_laplace(size=1):
-    '''
-    Samples from laplace distribution
-    size : integer specifying number of samples required
-    '''
-    return laplace.rvs(size = size)
-
-def cartesian_product(*arrays):
-    " Credits: https://stackoverflow.com/a/11146645"
-    la = len(arrays)
-    dtype = np.result_type(*arrays)
-    arr = np.empty([len(a) for a in arrays] + [la], dtype=dtype)
-    for i, a in enumerate(np.ix_(*arrays)):
-        arr[...,i] = a
-    return arr.reshape(-1, la)
-
-def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, n_tail = 5, scale = 1, scipy_int=True):
-
-    '''
-    Returns PPoly-type function that approximates the prior CDF of the signal x
-    r : shape parameter controlling rate of exponentional decay
-    eta : controls roundedness of peak, and hence sparsity
-    scale : scale parameter
-    n_samples : number of points used to numerically approximate CDF
-    tail_bound : Uses Chebyshev's Inequality to bound the region of the CDF that is outside the coverage of xs
-    n_tail : Sets the number of points tha lie outside the coverage of xs to approximate tails if need be
-
-    Usage:
-    new_cdf = compute_prior_cdf(r = 0.1, eta = 0.001)
-    new_cdf(0.5343) returns CDF
-    Can also accept arrays
-    '''
-    
-    beta = (eta + 1.5)/r 
-    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
-    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
-    
-    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
-    if cheby < 120:
-        n_tail = 0
-        print("No Tail")
-    
-
-    xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
-    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
-    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
-    prior_pdf = np.full(xs.shape, np.nan)
-
-    # Loop over xs
-    for j, x in enumerate(xs):
-
-        # Define integrands
-        def gauss_density(theta):
-            return (1./(np.sqrt(2*np.pi)*theta)) * np.exp(-0.5*(x/theta)**2)
-
-        def gen_gamma_density(theta):
-            return (r/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
-
-        def integrand(theta):
-            return gauss_density(theta) * gen_gamma_density(theta)
-
-        # Integrate 
-        if scipy_int:
-            prior_pdf[j] = integrate.quad(integrand, 0, np.inf)[0]
-        else:
-            prior_pdf[j] = eng.testIntegrals(float(r), float(eta), float(x), nargout=1)
-
-    prior_cdf = np.zeros_like(prior_pdf)
-    for i in range(len(xs) - 1):
-        prior_cdf[i] = np.trapz(prior_pdf[:i+1], xs[:i+1])
-    prior_cdf = np.append(prior_cdf[:-1], 1)
-    poly = interpolate.CubicSpline(x = xs, y = prior_cdf)
-
-    return poly
-
-def round_to_sigfigs(x, num_sigfigs=2):
+def round_to_sigfigs(x, num_sigfigs=5):
     if x == np.zeros_like(x):
         return 0
     return np.round(x, -int(np.floor(np.log10(abs(x)))-(num_sigfigs-1)))
-
-def add_cdfs(folder_name, r_range, eta_range, n_samples = 10000, scipy_int=True):
-    '''
-    folder_name: Name of directory that contains pickles of dictionaries of cdfs
-    r_range: range of r values, assumes use of np.arange
-    eta_range: range of eta values, assumes use of np.arange
-    check_redundant: if True, checks if key already exists in dictionary
-    n_samples: number of samples used when computing prior_cdf
-    '''
-    FOLDER_PATH = f'CDFs\\{folder_name}_{n_samples}_{min(eta_range)}-{max(eta_range)}\\'
-    cdfs_completed = set()
-    if os.path.isdir(FOLDER_PATH):
-        
-        for pkl in os.listdir(FOLDER_PATH):
-            with open(f'{FOLDER_PATH}{pkl}', 'rb') as handle:
-                next_cdf = pickle.load(handle)
-            cdfs_completed.update(next_cdf.keys())
-    else:
-        Path(os.path.join(os.getcwd(), FOLDER_PATH)).mkdir()
-
-    n = len(r_range)*len(eta_range)
-    i = 0
-    for r in r_range:
-        r_cdf = dict()
-        for eta in eta_range:
-            (r, eta) = (round_to_sigfigs(r), round_to_sigfigs(eta))
-            if ((r, eta) in cdfs_completed):
-                continue
-            print(f'{(r, eta)}, {i} of {n}')
-            i += 1
-            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  n_tail = 100, tail_bound = 0.01, scipy_int=scipy_int)
-
-        # Store pickle every outer loop iteration as its own file
-        with open(f'{FOLDER_PATH}/{r}.pickle', 'wb') as handle:
-            pickle.dump(r_cdf, handle)
 
 def extract_single_dist(all_dist_df, base_r, base_eta):
     return all_dist_df[(all_dist_df['base_r'] == base_r) & (all_dist_df['base_eta'] == base_eta)].drop(['base_r', 'base_eta'], axis = 1)
@@ -248,9 +40,9 @@ def kstest_custom(x, cdf, return_loc = False):
     d = max(dplus[plus_amax], dminus[minus_amax])
     if return_loc:
         if d == plus_amax:
-            return loc_max
+            return d, kstwo.sf(d, n), loc_max
         else:
-            return loc_min
+            return d, kstwo.sf(d, n), loc_min
     return d, kstwo.sf(d, n)
 
 def create_obs_x(data_dict, layer, only_diag = False):
@@ -259,7 +51,7 @@ def create_obs_x(data_dict, layer, only_diag = False):
         df = df[(df['Orientation'] == 'H') | (df['Orientation'] == 'V')]
     else:
         df = df[df['Orientation'] == 'D']
-    return np.hstack(df['Data'])
+    return np.sort(np.hstack(df['Data']))
 
 def make_layer_df(x, cdfs_df):
     df = cdfs_df.copy()
@@ -296,24 +88,234 @@ def val_df_fixed_num(x, num_samples, df):
     val_df['num_samples'] = num_samples * np.ones(val_df.shape[0])
     return val_df
 
+def convert_to_wavelet_basis(folder_dir,  normalized = True, basis="db1"):
+    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir)]
+    file_names = os.listdir(folder_dir)
+
+    df_dict = dict()
+    image = Image.open(file_list[0]).convert('L')
+    first_image = pywt.wavedec2(image, basis)
+    layer_len = len(first_image)
+    print(str(layer_len) + " layers being used")
+    for i in range(layer_len):
+        df = pd.DataFrame(columns=["Image ID", "Orientation", "Data"])
+        df_dict[i+1] = df
+
+    for k in range(len(file_list)):
+        image = Image.open(file_list[k]).convert('L')
+        image = np.array(image)
+        if normalized:
+            std= np.std(image)
+            mean = np.mean(image)
+            image = (image- mean)/std 
+            
+        name = file_names[k].split(".")[0]
+        transformed = pywt.wavedec2(image, basis)
+        df_dict[1].loc[len(df_dict[1].index)] = [name, "L1", np.array(transformed[0][0]).flatten()]
+        direction_names = ['H', 'V', 'D']
+
+        for i in range(1, layer_len): 
+            for j in range(len(transformed[i])):
+                arr = np.array(transformed[i][j])
+                df_dict[i+1].loc[len(df_dict[i+1].index)] = [name, direction_names[j], arr.flatten()]
+
+    return df_dict
+
+def dict_to_pickle(converted_directory, converted, name):
+    filename = name
+    filename = os.path.join(converted_directory, filename)
+    with open(filename+".pickle", 'wb') as handle:
+        pickle.dump(converted, handle)
+
+def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = False):
+
+    '''
+    Returns PPoly-type function that approximates the prior CDF of the signal x
+    r : shape parameter controlling rate of exponentional decay
+    eta : controls roundedness of peak, and hence sparsity
+    scale : scale parameter
+    n_samples : number of points used to numerically approximate CDF
+    tail_bound : Uses Chebyshev's Inequality to bound the region of the CDF that is outside the coverage of xs
+    n_tail : Sets the number of points tha lie outside the coverage of xs to approximate tails if need be
+
+    Usage:
+    new_cdf = compute_prior_cdf(r = 0.1, eta = 0.001)
+    new_cdf(0.5343) returns CDF
+    Can also accept arrays
+    '''
+    
+    beta = (eta + 1.5)/r 
+    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
+    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
+    n_tail = int(n_samples*tail_percent)
+    
+    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
+    if cheby < 120:
+        n_tail = 0
+        print("No Tail")
+    
+    xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
+    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
+    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
+    prior_pdf = np.full(xs.shape, np.nan)
+
+    for j, x in enumerate(xs):
+
+        def gauss_density(theta):
+            return (1./(np.sqrt(2*np.pi)*theta)) * np.exp(-0.5*(x/theta)**2)
+
+        def gen_gamma_density(theta):
+            return (r/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
+
+        def integrand(theta):
+            return gauss_density(theta) * gen_gamma_density(theta)
+
+        if scipy_int:
+            prior_pdf[j] = integrate.quad(integrand, 0, np.inf)[0]
+        else:
+            prior_pdf[j] = eng.compute_prior(float(r), float(eta), float(x), nargout=1)
+
+    prior_cdf = np.zeros_like(prior_pdf)
+    prior_cdf[0] = 0
+    for i in range(1, len(xs)):
+        prior_cdf[i] = (interpolate.CubicSpline(x = xs[:i+1], y = prior_pdf[:i+1])).integrate(xs[0], xs[i])+0
+
+        # Alternative with Simpson's: prior_cdf[i] = integrate.simps(prior_pdf[:i+1], xs[:i+1])
+    normalizer = prior_cdf[-1]
+    first = prior_cdf[1]
+    assert 1.05 > normalizer > 0.95
+    assert 0.05 > first > -0.05
+    prior_cdf = prior_cdf/normalizer   
+
+    k = int(0.01*n_samples)
+    zero_padding = np.zeros(k)
+    ones_padding = np.ones(k)
+
+    pad_max = max(10e5, np.round(cheby ** 2))
+    prior_cdf = np.append(zero_padding, prior_cdf)
+    xs_pad = np.append(np.linspace(-pad_max, xs[0] - 1e-5, k), xs)
+
+    prior_cdf = np.append(prior_cdf, ones_padding)
+    xs_pad = np.append(xs_pad, np.linspace(xs[-1] + 1e-5, pad_max, k))
+
+    poly = interpolate.CubicSpline(x = xs_pad, y = prior_cdf)
+
+    assert np.isclose(poly(-1e10), 0, atol = 1e-8)
+    assert np.isclose(poly(1e10), 1, atol = 1e-8)
+
+    if support:
+        return xs, poly
+    else:
+        return poly
+
+def compute_prior_pdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = True):
+
+    '''
+    Returns PPoly-type function that approximates the prior PDF of the signal x
+    r : shape parameter controlling rate of exponentional decay
+    eta : controls roundedness of peak, and hence sparsity
+    scale : scale parameter
+    n_samples : number of points used to numerically approximate CDF
+    tail_bound : Uses Chebyshev's Inequality to bound the region of the CDF that is outside the coverage of xs
+    n_tail : Sets the number of points tha lie outside the coverage of xs to approximate tails if need be
+
+    Usage:
+    new_cdf = compute_prior_cdf(r = 0.1, eta = 0.001)
+    new_cdf(0.5343) returns CDF
+    Can also accept arrays
+    '''
+    
+    beta = (eta + 1.5)/r 
+    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
+    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
+    
+    n_tail = int(n_samples*tail_percent)
+    
+    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
+    if cheby < 120:
+        n_tail = 0
+        print("No Tail")
+    
+
+    xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
+    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
+    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
+    prior_pdf = np.full(xs.shape, np.nan)
+
+    for j, x in enumerate(xs):
+
+        def gauss_density(theta):
+            return (1./(np.sqrt(2*np.pi)*theta)) * np.exp(-0.5*(x/theta)**2)
+
+        def gen_gamma_density(theta):
+            return (r/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
+
+        def integrand(theta):
+            return gauss_density(theta) * gen_gamma_density(theta)
+
+        if scipy_int:
+            prior_pdf[j] = integrate.quad(integrand, 0, np.inf)[0]
+        else:
+            prior_pdf[j] = eng.compute_prior(float(r), float(eta), float(x), nargout=1)
+
+    if support:
+        return xs, prior_pdf
+    else:
+        return prior_pdf
+    
+
 def combine_pickles(dir_name):
     CDFs_DIR = os.path.join(os.getcwd(), "CDFs")
-    combined_path = f'{os.path.join(CDFs_DIR, f"combined_{dir_name}.pickle")}'
-    if os.path.isfile(combined_path):
-        with open(combined_path, 'rb') as handle:
-            cdfs = pickle.load(handle)
-        return cdfs
-    else:
-        pickles = os.listdir(os.path.join(CDFs_DIR, dir_name))
-        cdfs = dict()
-        for pkl in pickles:
-            
-            pkl_path = os.path.join(CDFs_DIR, f'{dir_name}\\{pkl}')
-            with open(pkl_path, 'rb') as handle:
-                new_cdf = pickle.load(handle)
-                cdfs = cdfs | new_cdf
-        with open(combined_path, 'wb') as handle:
-            pickle.dump(cdfs, handle)
-        return cdfs
 
+    pickles = os.listdir(os.path.join(CDFs_DIR, dir_name))
+    cdfs = dict()
+    for pkl in pickles:
         
+        pkl_path = os.path.join(CDFs_DIR, f'{dir_name}/{pkl}')
+        with open(pkl_path, 'rb') as handle:
+            new_cdf = pickle.load(handle)
+        if type(new_cdf) == dict:
+            cdfs = cdfs | new_cdf
+
+    return cdfs
+
+def compute_ksstat(sample, cdf, sorted_sample = True):
+    '''
+    Computes the KS-Test Statistic, assumes that the sample is already sorted
+    '''
+    if not sorted_sample:
+        sample = np.sort(sample)
+
+    if isinstance(cdf, tuple):
+        r = cdf[0]
+        eta = cdf[1]
+        cdf = compute_prior_cdf(r, eta, 10000)
+    
+    n = len(sample)
+    cdfvals = cdf(sample)
+    dplus, dminus = (np.arange(1.0, n + 1) / n - cdfvals), (cdfvals - np.arange(0.0, n)/n)
+    return np.max(np.append(dplus, dminus))
+
+def gridsearch(sample, all_cdfs, top_k = 1):
+    '''
+    Takes in a sample and list of CDFs, 
+    Returns the KS-Test Statistic computed with respect to each CDF, the top-k minimizing parameters and the corresponding distances
+    '''
+    cdf_keys = sorted(all_cdfs)
+    cdf_splines = [all_cdfs[key] for key in cdf_keys]
+    num_cdfs = len(cdf_keys)
+    ksstats = np.zeros(num_cdfs)
+    
+    for i in range(num_cdfs):
+        ksstats[i] = compute_ksstat(sample, cdf_splines[i])
+    
+    min_k = np.ones(top_k).astype(int)
+    print(all_cdfs)
+    if top_k > 1:
+        ksstats_copy = ksstats.copy()
+        for i in np.arange(top_k):
+            min_k[i] = np.argmin(ksstats_copy)
+            ksstats_copy[min_k[i]] = 1
+        return ksstats, [cdf_keys[j] for j in min_k], ksstats[min_k]
+    else:
+        return ksstats, cdf_keys[np.argmin(ksstats)], np.min(ksstats)

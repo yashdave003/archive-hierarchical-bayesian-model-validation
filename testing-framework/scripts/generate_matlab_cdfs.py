@@ -1,4 +1,3 @@
-
 from logging import raiseExceptions
 from signal import raise_signal
 import numpy as np
@@ -11,8 +10,9 @@ import matplotlib.pyplot as plt
 import pickle
 from pathlib import Path
 import os
+from numba import njit, prange
 
-USE_MATLAB = True
+USE_MATLAB = False
 
 if USE_MATLAB:
     import matlab.engine 
@@ -98,7 +98,7 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent 
 
     poly = interpolate.CubicSpline(x = xs_pad, y = prior_cdf)
 
-    print(poly(-1e20), poly(1e20))
+    print(poly(-1e10), poly(1e10))
 
     if support:
         return xs, poly
@@ -118,43 +118,55 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
     check_redundant: if True, checks if key already exists in dictionary
     n_samples: number of samples used when computing prior_cdf
     '''
-    print(os.getcwd())
     if not os.path.isdir("CDFs"):
         raise Exception("This Directory Does Not Contain CDFs")
 
     # Note the FOLDER_PATH
     #FOLDER_PATH = f'testing-framework\\CDFs\\{folder_name}{n_samples}\\'
-    FOLDER_PATH = os.path.join("CDFs", folder_name+ str(n_samples))
+    FOLDER_PATH = os.path.join("CDFs", folder_name+str(n_samples))
     cdfs_completed = set()
     if os.path.isdir(FOLDER_PATH):
         print(FOLDER_PATH)    
         for pkl in os.listdir(FOLDER_PATH):
             #with open(f'{FOLDER_PATH}{pkl}', 'rb') as handle:
-            with open(os.path.join(FOLDER_PATH,pkl), 'rb') as handle:
+            with open(os.path.join(FOLDER_PATH, pkl), 'rb') as handle:
                 next_cdf = pickle.load(handle)
             cdfs_completed.update(next_cdf.keys())
     else:
         Path(os.path.join(os.getcwd(), FOLDER_PATH)).mkdir()
     print("CDFs completed:", len(cdfs_completed))
     n = len(r_range)*len(eta_range)
-    i = 0
+
+
+    cnt = 0
+    grouped_r_cdf = dict()
     for r in r_range:
         r_cdf = dict()
-        r = round_to_sigfigs(r, 3)
+        r = round_to_sigfigs(r, 6)
         for eta in eta_range:
-            eta = round_to_sigfigs(eta, 3)
+            eta = round_to_sigfigs(eta, 6)
             if ((r, eta) in cdfs_completed):
                 continue
-            print(f'{(r, eta)}, {i} of {n}')
-            i += 1
+            cnt += 1
+            print(f'{(r, eta)}, {cnt} of {n}')
             r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, support=False)
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
-        min_eta, max_eta = round_to_sigfigs(min(eta_range), 3), round_to_sigfigs(max(eta_range), 3)
-        #with open(f'{FOLDER_PATH}/{r}_{min_eta}-{max_eta}.pickle', 'wb') as handle:
-        with open(os.path.join(FOLDER_PATH,f'{r}_{min_eta}-{max_eta}.pickle'), 'wb') as handle:
-            pickle.dump(r_cdf, handle)
+        min_eta, max_eta = round_to_sigfigs(min(eta_range), 6), round_to_sigfigs(max(eta_range), 6)
+        if len(eta_range) > 1:
+            with open(os.path.join(FOLDER_PATH,f'{r}_{min_eta}-{max_eta}.pickle'), 'wb') as handle:
+                pickle.dump(r_cdf, handle)
+        else:
+            grouped_r_cdf = grouped_r_cdf | r_cdf
+    with open(os.path.join(FOLDER_PATH,f'{round_to_sigfigs(r_range[0], 6)}-{round_to_sigfigs(r_range[-1], 6)}_{min_eta}.pickle'), 'wb') as handle:
+            pickle.dump(grouped_r_cdf, handle)
+
+        # elif cnt % 10 == 9 or cnt == len(r_range): # Store every 10 CDFs computed
+        #     grouped_r_cdf = grouped_r_cdf | r_cdf
+        #     with open(os.path.join(FOLDER_PATH,f'{round_to_sigfigs(r_range[cnt-9], 6)}-{round_to_sigfigs(r_range[cnt], 6)}_{min_eta}.pickle'), 'wb') as handle:
+        #         pickle.dump(grouped_r_cdf, handle)
+
     print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
 # TODO:
@@ -165,50 +177,63 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
 
 # # First TEST
 # all_eta = np.append(np.arange(0, 4, 0.1), np.array([np.float_power(10, i) for i in range(-9, -1)]))
-# all_r = np.arange(0.6, 5, 0.1)
+# all_r = np.arange(0.6, 0.7, 0.1)
 # num_points = 1000
 # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='test_')
 
 # # # Then, change USE_MATLAB to True at the top of the notebook and run below:
 
+os.chdir(os.path.join(os.getcwd(), "testing-framework"))
+
 all_eta = np.append(np.arange(0.1, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
 # all_eta = np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-3, -1)]))
-all_r = np.arange(0.3, 0.7, 0.1)
+all_r = np.arange(0.7, 2, 0.1)
 num_points = 10000
-add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='mtlb_')
+add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='scipy_')
 
-# ############################################################
+############################################################
 
-# # LAYER 2
-# all_r = np.arange(0.55, 0.65, 0.01)
-# all_eta = np.arange(3.1, 3.3, 0.01)
+# LAYER 2
+# all_r = np.arange(0.6020, 0.6030, 0.0001)
+# all_eta = np.arange(3.20, 3.21, 0.01)
 # num_points = 10000
 # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer2_')
 
-# # LAYER 3
-# all_r = np.arange(0.69, 0.72, 0.001)
-# all_eta = np.arange(3.55, 3.63, 0.01)
+# LAYER 3
+# all_r = np.arange(0.7040, 0.7060, 0.0001)
+# all_eta = np.array([3.63]) #np.arange(3.63, 3.64, 0.01)
 # num_points = 10000
 # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer3_')
 
 # # LAYER 4
-# all_r = np.arange(0.79, 0.81, 0.001)
-# all_eta = np.arange(2.9, 3.1, 0.01)
+# all_r = np.arange(0.780, 0.800, 0.001)
+# all_eta = [0.24] # np.arange(2.9, 3.1, 0.01)
 # num_points = 10000
 # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer4_')
 
-# # LAYER 5
-# all_r = np.arange(0.89, 0.91, 0.001)
-# all_eta = np.arange(1.55, 1.65, 0.01)
-# num_points = 10000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer5_')
+# LAYER 5
+all_r = np.arange(0.9030, 0.9050, 0.0001)
+all_eta =  [1.62] #np.arange(1.55, 1.65, 0.01)
+num_points = 10000
+add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer5_')
 
 # # LAYER 6
-# all_r = np.arange(0.95, 1.05, 0.01)
-# all_eta = np.arange(0.15, 0.25, 0.01)
+# all_r = np.arange(1.020, 1.040, 0.001)
+# all_eta = [0.33] # np.arange(0.33, 0.34, 0.01)
 # num_points = 10000
 # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer6_')
 
+# # LAYER 7
+# all_r = np.arange(4.6280, 4.630, 0.0001)
+# all_eta = [0] # np.append(np.logspace(-6, -1, 1, base = 10), np.arange(0, 4, 0.1))
+# num_points = 10000
+# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer7_')
+
+# # LAYER 8
+# all_r = np.arange(5.690, 5.710, 0.001)
+# all_eta = [0] # np.append(np.logspace(-6, -1, 1, base = 10), np.arange(0, 4, 0.1))
+# num_points = 10000
+# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer8_')
 
 if USE_MATLAB:
     eng.quit()

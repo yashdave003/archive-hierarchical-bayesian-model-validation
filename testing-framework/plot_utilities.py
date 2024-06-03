@@ -140,7 +140,7 @@ def create_scatter_plots_log_eta(df, metric=None, save_plot : bool = False):
         if save_plot:
             fig.savefig(f'panoptic/plots/(r,eta){metric}_plot_with_log_eta.png', dpi = 300, bbox_inches = 'tight')
 
-def visualize_cdfs(obs_x, r, eta, n_samples = 1000, all_cdfs = None, save_plot : bool = False):
+def visualize_cdfs(obs_x, r, eta, n_samples = 1000, all_cdfs = None):
     """
     Visualize the gap between the empirical CDF and the true CDF.
     
@@ -160,7 +160,7 @@ def visualize_cdfs(obs_x, r, eta, n_samples = 1000, all_cdfs = None, save_plot :
     if all_cdfs and (r, eta) in all_cdfs:
         null_cdf = all_cdfs[(r, eta)]
     else:
-        null_cdf = compute_prior_cdf(r, eta, n_samples)
+        null_cdf = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples)
     plt.plot(obs_x, np.arange(1, n+1)/n, label='Empirical CDF')
     plt.plot(xs, null_cdf(xs), label='True CDF')
     result = ks_1samp(obs_x, null_cdf)
@@ -174,9 +174,6 @@ def visualize_cdfs(obs_x, r, eta, n_samples = 1000, all_cdfs = None, save_plot :
     plt.legend()
     plt.show()
 
-    if save_plot:
-        plt.savefig(f'panoptic/plots/ecdf_vs_true_with_{r}_and_{eta}(n={n}).png', dpi = 300, bbox_inches = 'tight')
-    
     return distance, location
 
 def create_contour_plot(df, metric):
