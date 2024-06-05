@@ -89,7 +89,6 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent 
 
     pad_max = max(10e5, np.round(cheby ** 2))
 
-
     prior_cdf = np.append(zero_padding, prior_cdf)
     xs_pad = np.append(np.linspace(-pad_max, xs[0] - 1e-5, k), xs)
 
@@ -110,6 +109,30 @@ def round_to_sigfigs(x, num_sigfigs=2):
         return 0
     return np.round(x, -int(np.floor(np.log10(abs(x)))-(num_sigfigs-1)))
 
+def load_pkl(path):
+    if os.path.isfile(path):
+        with open(path, 'rb') as handle:
+            obj = pickle.load(handle)
+        return object
+    else:
+        raise Exception("File does not exist, check the path again")
+    
+def dump_dict_pkl(obj, path, overwrite = False):
+    if not overwrite:
+        if os.path.isfile(path):
+            with open(path, 'rb') as handle:
+                existing_object = pickle.load(handle)
+            obj = obj | existing_object
+            with open(path, 'wb') as handle:
+                pickle.dump(obj, handle)
+            print("merged")
+        with open(path, 'wb') as handle:
+            pickle.dump(obj, handle)
+    else:
+        with open(path, 'wb') as handle:
+            pickle.dump(obj, handle)
+        
+
 def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
     '''
     folder_name: Name of directory that contains pickles of dictionaries of cdfs
@@ -118,17 +141,18 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
     check_redundant: if True, checks if key already exists in dictionary
     n_samples: number of samples used when computing prior_cdf
     '''
+    
     if not os.path.isdir("CDFs"):
         raise Exception("This Directory Does Not Contain CDFs")
+    
+    if folder_name == '':
+        folder_name = f'{min(r_range)}-{max(r_range)}{min(eta_range)}-{max(eta_range)}_'
 
-    # Note the FOLDER_PATH
-    #FOLDER_PATH = f'testing-framework\\CDFs\\{folder_name}{n_samples}\\'
     FOLDER_PATH = os.path.join("CDFs", folder_name+str(n_samples))
     cdfs_completed = set()
     if os.path.isdir(FOLDER_PATH):
         print(FOLDER_PATH)    
         for pkl in os.listdir(FOLDER_PATH):
-            #with open(f'{FOLDER_PATH}{pkl}', 'rb') as handle:
             with open(os.path.join(FOLDER_PATH, pkl), 'rb') as handle:
                 next_cdf = pickle.load(handle)
             cdfs_completed.update(next_cdf.keys())
@@ -137,9 +161,14 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
     print("CDFs completed:", len(cdfs_completed))
     n = len(r_range)*len(eta_range)
 
-
+    if len(cdfs_completed) == n:
+        print("Already computed")
+        return
+    
     cnt = 0
     grouped_r_cdf = dict()
+    flag = False
+
     for r in r_range:
         r_cdf = dict()
         r = round_to_sigfigs(r, 6)
@@ -153,40 +182,24 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
-        min_eta, max_eta = round_to_sigfigs(min(eta_range), 6), round_to_sigfigs(max(eta_range), 6)
+        min_eta, max_eta = round_to_sigfigs(eta_range[0], 6), round_to_sigfigs(eta_range[-1], 6)
+        
         if len(eta_range) > 1:
-            with open(os.path.join(FOLDER_PATH,f'{r}_{min_eta}-{max_eta}.pickle'), 'wb') as handle:
-                pickle.dump(r_cdf, handle)
+            pkl_path = os.path.join(FOLDER_PATH,f'{r}_{min_eta}-{max_eta}.pickle')
+            dump_dict_pkl(r_cdf, pkl_path, overwrite=False)
         else:
             grouped_r_cdf = grouped_r_cdf | r_cdf
-    with open(os.path.join(FOLDER_PATH,f'{round_to_sigfigs(r_range[0], 6)}-{round_to_sigfigs(r_range[-1], 6)}_{min_eta}.pickle'), 'wb') as handle:
-            pickle.dump(grouped_r_cdf, handle)
-
-        # elif cnt % 10 == 9 or cnt == len(r_range): # Store every 10 CDFs computed
-        #     grouped_r_cdf = grouped_r_cdf | r_cdf
-        #     with open(os.path.join(FOLDER_PATH,f'{round_to_sigfigs(r_range[cnt-9], 6)}-{round_to_sigfigs(r_range[cnt], 6)}_{min_eta}.pickle'), 'wb') as handle:
-        #         pickle.dump(grouped_r_cdf, handle)
+            flag = True
+    if flag:
+        pkl_path = os.path.join(FOLDER_PATH, f'{round_to_sigfigs(r_range[0], 6)}-{round_to_sigfigs(r_range[-1], 6)}_{min_eta}.pickle')
+        dump_dict_pkl(grouped_r_cdf, pkl_path, overwrite=False)
 
     print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
-
-# TODO:
-# # First, Test to see file directory set up is correct with num_points = 100
-# # Expected outcome: a new folder within CDFs is created with name 'test_not_mtlb_100_0.2-0.8' 
-# # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle containing two pickles (grouped by r)
-# # Run it a second time, and since the CDFs are already computed, it should not take any time to run
-
-# # First TEST
-# all_eta = np.append(np.arange(0, 4, 0.1), np.array([np.float_power(10, i) for i in range(-9, -1)]))
-# all_r = np.arange(0.6, 0.7, 0.1)
-# num_points = 1000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='test_')
-
-# # # Then, change USE_MATLAB to True at the top of the notebook and run below:
-
+  
 os.chdir(os.path.join(os.getcwd(), "testing-framework"))
 
-all_eta = np.append(np.arange(0.1, 4, 0.2), np.array([np.float_power(10, i) for i in range(-9, -1)]))
-# all_eta = np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-3, -1)]))
+all_eta = np.arange(0.1, 4, 0.2) #, np.array([np.float_power(10, i) for i in range(-9, -1)]))
+# all_eta =  np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-3, -1)]))
 all_r = np.arange(0.7, 2, 0.1)
 num_points = 10000
 add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='scipy_')
@@ -205,17 +218,17 @@ add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int
 # num_points = 10000
 # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer3_')
 
-# # LAYER 4
-# all_r = np.arange(0.780, 0.800, 0.001)
-# all_eta = [0.24] # np.arange(2.9, 3.1, 0.01)
+# # # LAYER 4
+# all_r = np.arange(0.790, 0.810, 0.001)
+# all_eta = [3] # np.arange(2.9, 3.1, 0.01)
 # num_points = 10000
 # add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer4_')
 
 # LAYER 5
-all_r = np.arange(0.9030, 0.9050, 0.0001)
-all_eta =  [1.62] #np.arange(1.55, 1.65, 0.01)
-num_points = 10000
-add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer5_')
+# all_r = np.arange(0.90390, 0.90410, 0.00001)
+# all_eta =  [1.62] #np.arange(1.55, 1.65, 0.01)
+# num_points = 10000
+# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer5_')
 
 # # LAYER 6
 # all_r = np.arange(1.020, 1.040, 0.001)

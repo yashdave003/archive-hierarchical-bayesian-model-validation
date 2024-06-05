@@ -310,7 +310,7 @@ def gridsearch(sample, all_cdfs, top_k = 1):
         ksstats[i] = compute_ksstat(sample, cdf_splines[i])
     
     min_k = np.ones(top_k).astype(int)
-    print(all_cdfs)
+
     if top_k > 1:
         ksstats_copy = ksstats.copy()
         for i in np.arange(top_k):
@@ -318,4 +318,88 @@ def gridsearch(sample, all_cdfs, top_k = 1):
             ksstats_copy[min_k[i]] = 1
         return ksstats, [cdf_keys[j] for j in min_k], ksstats[min_k]
     else:
-        return ksstats, cdf_keys[np.argmin(ksstats)], np.min(ksstats)
+        return ksstats, cdf_keys[np.argmin(ksstats)], np.min(ksstats) 
+
+
+def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
+    '''
+    folder_name: Name of directory that contains pickles of dictionaries of cdfs
+    r_range: range of r values, assumes use of np.arange
+    eta_range: range of eta values, assumes use of np.arange
+    check_redundant: if True, checks if key already exists in dictionary
+    n_samples: number of samples used when computing prior_cdf
+    '''
+    
+    if not os.path.isdir("CDFs"):
+        raise Exception("This Directory Does Not Contain CDFs")
+    
+    if folder_name == '':
+        folder_name = f'{min(r_range)}-{max(r_range)}{min(eta_range)}-{max(eta_range)}_'
+
+    FOLDER_PATH = os.path.join("CDFs", folder_name+str(n_samples))
+    cdfs_completed = set()
+    if os.path.isdir(FOLDER_PATH):
+        print(FOLDER_PATH)    
+        for pkl in os.listdir(FOLDER_PATH):
+            with open(os.path.join(FOLDER_PATH, pkl), 'rb') as handle:
+                next_cdf = pickle.load(handle)
+            cdfs_completed.update(next_cdf.keys())
+    else:
+        Path(os.path.join(os.getcwd(), FOLDER_PATH)).mkdir()
+    print("CDFs completed:", len(cdfs_completed))
+    n = len(r_range)*len(eta_range)
+
+    if len(cdfs_completed) == n:
+        print("Already computed")
+        return
+    
+    cnt = 0
+    grouped_r_cdf = dict()
+    flag = False
+
+    for r in r_range:
+        r_cdf = dict()
+        r = round_to_sigfigs(r, 6)
+        for eta in eta_range:
+            eta = round_to_sigfigs(eta, 6)
+            if ((r, eta) in cdfs_completed):
+                continue
+            cnt += 1
+            print(f'{(r, eta)}, {cnt} of {n}')
+            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, support=False)
+
+        # Store pickle every outer loop iteration as its own file
+        # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
+        min_eta, max_eta = round_to_sigfigs(eta_range[0], 6), round_to_sigfigs(eta_range[-1], 6)
+        
+        if len(eta_range) > 1:
+            pkl_path = os.path.join(FOLDER_PATH,f'{r}_{min_eta}-{max_eta}.pickle')
+            dump_dict_pkl(r_cdf, pkl_path, overwrite=False)
+        else:
+            grouped_r_cdf = grouped_r_cdf | r_cdf
+            flag = True
+    if flag:
+        pkl_path = os.path.join(FOLDER_PATH, f'{round_to_sigfigs(r_range[0], 6)}-{round_to_sigfigs(r_range[-1], 6)}_{min_eta}.pickle')
+        dump_dict_pkl(grouped_r_cdf, pkl_path, overwrite=False)
+
+    print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
+
+def load_pkl(path):
+    if os.path.isfile(path):
+        with open(path, 'rb') as handle:
+            obj = pickle.load(handle)
+        return object
+    else:
+        raise Exception("File does not exist, check the path again")
+    
+def dump_dict_pkl(obj, path, overwrite = False):
+    if overwrite:
+        with open(path, 'wb') as handle:
+            pickle.dump(obj, handle)
+    else:
+        if os.path.isfile(path):
+            with open(path, 'rb') as handle:
+                existing_object = pickle.load(handle)
+            obj = obj | existing_object
+            with open(path, 'wb') as handle:
+                pickle.dump(obj, handle)
