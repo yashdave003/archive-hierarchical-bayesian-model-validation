@@ -8,3 +8,6 @@ Wavelet Transform/.DS_Store
 .DS_Store
 testing-framework/__pycache__/utilities.cpython-38.pyc
 testing-framework/CDFs/test_1000/
+testing-framework/panoptic/df_dict_cdfs_100000_0.1-2.9-0.1_0-4-0.2.pickle
+testing-framework/panoptic/obs_x_dict.pickle
+data/Panoptic Agriculture/Transformed Dataset/Toy_Data_Dict_Normalized.pickle
