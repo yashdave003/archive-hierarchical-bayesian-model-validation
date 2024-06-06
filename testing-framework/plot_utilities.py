@@ -137,45 +137,6 @@ def create_scatter_plots_log_eta(df, metric=None, save_plot : bool = False):
         plt.subplots_adjust(wspace=0.3)
         plt.show()
 
-        if save_plot:
-            fig.savefig(f'panoptic/plots/(r,eta){metric}_plot_with_log_eta.png', dpi = 300, bbox_inches = 'tight')
-
-def visualize_cdfs(obs_x, r, eta, n_samples = 1000, all_cdfs = None):
-    """
-    Visualize the gap between the empirical CDF and the true CDF.
-    
-    Args:
-        obs_x (np.ndarray): Observed data.
-        r (float): r value.
-        eta (float): eta value.
-        all_cdfs (dict): Dictionary containing true CDFs.
-        
-    Returns:
-        distance (float): The Kolmogorov-Smirnov statistic.
-        location (float): The location of the maximum deviation between the empirical and true CDFs.
-    """
-    xs = np.linspace(np.min(obs_x), np.max(obs_x), 10000)
-    obs_x = np.sort(obs_x)
-    n = len(obs_x)
-    if all_cdfs and (r, eta) in all_cdfs:
-        null_cdf = all_cdfs[(r, eta)]
-    else:
-        null_cdf = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples)
-    plt.plot(obs_x, np.arange(1, n+1)/n, label='Empirical CDF')
-    plt.plot(xs, null_cdf(xs), label='True CDF')
-    result = ks_1samp(obs_x, null_cdf)
-    distance = result.statistic
-    location = result.statistic_location
-    emp_cdf_at_loc = np.searchsorted(obs_x, location, side='right') / n
-    true_cdf_at_loc = null_cdf(location)
-    plt.vlines(location, emp_cdf_at_loc, true_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}', color = 'xkcd:bright red')
-    
-    plt.title(f'Empirical CDF vs True CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
-    plt.legend()
-    plt.show()
-
-    return distance, location
-
 def create_contour_plot(df, metric):
     """
     Create a contour plot with a semi-transparent heatmap in the background, where the color represents the values from the specified metric column.
@@ -210,3 +171,115 @@ def create_contour_plot(df, metric):
     ax.set_title('Contour Plot (r, eta) colored by {}'.format(metric))
     
     plt.show()
+
+def visualize_cdf(obs_x, r, eta, n_samples = 1000, all_cdfs = None, layer = None):
+    """
+    Visualize the gap between the empirical CDF and the true CDF.
+    
+    Args:
+        obs_x (np.ndarray): Observed data.
+        r (float): r value.
+        eta (float): eta value.
+        all_cdfs (dict): Dictionary containing true CDFs.
+        
+    Returns:
+        distance (float): The Kolmogorov-Smirnov statistic.
+        location (float): The location of the maximum deviation between the empirical and true CDFs.
+    """
+    xs = np.linspace(np.min(obs_x), np.max(obs_x), 10000)
+    obs_x = np.sort(obs_x)
+    n = len(obs_x)
+    if all_cdfs and (r, eta) in all_cdfs:
+        null_cdf = all_cdfs[(r, eta)]
+    else:
+        null_cdf = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples)
+    plt.plot(obs_x, np.arange(1, n+1)/n, label='Empirical CDF')
+    plt.plot(xs, null_cdf(xs), label='True CDF')
+    result = ks_1samp(obs_x, null_cdf)
+    distance = result.statistic
+    location = result.statistic_location
+    emp_cdf_at_loc = np.searchsorted(obs_x, location, side='right') / n
+    true_cdf_at_loc = null_cdf(location)
+    plt.vlines(location, emp_cdf_at_loc, true_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)} \n at x={np.round(location, 3)}', color = 'xkcd:bright red')
+    if layer:
+        plt.title(f'Layer {layer} Empirical CDF vs True CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+    else:
+        plt.title(f'Empirical CDF vs True CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
+    plt.legend()
+    plt.show()
+
+    return distance, location
+
+def visualize_pdf(obs_x, r, eta, layer=None):
+    xs, pdf = compute_prior_pdf(r, eta)
+    plt.plot(xs, pdf, label = 'True CDF')
+    sns.kdeplot(sample, label = 'Empirical CDF (KDE)')
+    if layer:
+        plt.title(f'Layer {layer} Empirical PDF vs True PDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+    else:
+        plt.title(f'Empirical PDF vs True PDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
+    plt.legend()
+
+def visualize_cdf_pdf(obs_x, params, distro = 'gengamma', n_samples=10000, all_cdfs=None, layer=None):
+    """
+    Visualize the gap between the empirical CDF/PDF and the true CDF/PDF.
+
+    Args:
+        obs_x (np.ndarray): Observed data.
+        r (float): r value.
+        eta (float): eta value.
+        n_samples (int): Number of samples for the true CDF/PDF.
+        all_cdfs (dict): Dictionary containing true CDFs.
+        layer (int or None): Layer index (for titling purposes).
+
+    Returns:
+        distance (float): The Kolmogorov-Smirnov statistic.
+        location (float): The location of the maximum deviation between the empirical and true CDFs.
+    """
+    xs = np.linspace(np.min(obs_x), np.max(obs_x), 10000)
+    obs_x = np.sort(obs_x)
+    n = len(obs_x)
+    
+    if distro == 'gengamma':
+        r = params[0]
+        eta = params[1]
+        if all_cdfs and (r, eta) in all_cdfs:
+            null_cdf = all_cdfs[(r, eta)]
+        else:
+            null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples)
+    elif distro == 'gaussian' or distro == 'normal':
+        null_cdf = stats.norm(scale=params).cdf
+    elif distro == 'laplace':
+        null_cdf = stats.laplace(scale=params).cdf
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+    # Empirical CDF vs True CDF
+    ax1.plot(obs_x, np.arange(1, n+1)/n, label='Empirical CDF')
+    ax1.plot(xs, null_cdf(xs), label='True CDF')
+    result = ks_1samp(obs_x, null_cdf)
+    distance = result.statistic
+    location = result.statistic_location
+    emp_cdf_at_loc = np.searchsorted(obs_x, location, side='right') / n
+    true_cdf_at_loc = null_cdf(location)
+    ax1.vlines(location, emp_cdf_at_loc, true_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
+    if layer:
+        ax1.set_title(f'Layer {layer} Empirical CDF vs True CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+    else:
+        ax1.set_title(f'Empirical CDF vs True CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
+    ax1.legend()
+
+    # Empirical PDF vs True PDF
+    xs_pdf, true_pdf = compute_prior_pdf(r, eta)
+    sns.kdeplot(obs_x, ax=ax2, label='Empirical PDF (KDE)')
+    ax2.plot(xs_pdf, true_pdf, label='True PDF')
+    if layer:
+        ax2.set_title(f'Layer {layer} Empirical PDF vs True PDF \n (r={r}, eta={eta})')
+    else:
+        ax2.set_title(f'Empirical PDF vs True PDF (r={r}, eta={eta})')
+    ax2.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    return distance, location

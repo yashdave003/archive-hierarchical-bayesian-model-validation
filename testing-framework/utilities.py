@@ -127,7 +127,7 @@ def dict_to_pickle(converted_directory, converted, name):
     with open(filename+".pickle", 'wb') as handle:
         pickle.dump(converted, handle)
 
-def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = False):
+def compute_prior_cdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = False):
 
     '''
     Returns PPoly-type function that approximates the prior CDF of the signal x
@@ -208,7 +208,7 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent 
     else:
         return poly
 
-def compute_prior_pdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = True):
+def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = True):
 
     '''
     Returns PPoly-type function that approximates the prior PDF of the signal x
@@ -401,5 +401,93 @@ def dump_dict_pkl(obj, path, overwrite = False):
             with open(path, 'rb') as handle:
                 existing_object = pickle.load(handle)
             obj = obj | existing_object
+        else:
             with open(path, 'wb') as handle:
                 pickle.dump(obj, handle)
+
+def find_n_fixed_pval_stat(ksstat: float, n: int, cutoff=0.05, cache = True):
+    """
+    Finds the sample size 'n' required to achieve a target p-value 'cutoff' for a given Kolmogorov-Smirnov (KS) statistic 'ksstat'.
+
+    Args:
+        ksstat (float): The Kolmogorov-Smirnov statistic value.
+        n (int): The initial sample size to start the search.
+        cutoff (float, optional): The target p-value to achieve. Defaults to 0.05.
+
+    Returns:
+        int: The sample size 'n' required to achieve the target p-value 'cutoff' for the given 'ksstat'.
+
+    Note:
+        This function assumes the availability of the 'kstwo' function from a specific library (e.g., scipy.stats) 
+        to calculate the survival function (sf) of the Kolmogorov-Smirnov distribution.
+    """
+
+    if cache:
+        cache = pd.read_pickle('pickles/find_n_cache.pickle')
+        if (round_to_sigfigs(ksstat, 2), round_to_sigfigs(n, 2)) in cache:
+            return cache[(round_to_sigfigs(ksstat, 2), round_to_sigfigs(n, 2))]
+
+    curr_pval = kstwo(n).sf(ksstat)
+    while not np.isclose(curr_pval, cutoff, atol=0.01):
+
+        if (round_to_sigfigs(ksstat, 2), round_to_sigfigs(n, 2)) in cache:
+            return cache[(round_to_sigfigs(ksstat, 2), round_to_sigfigs(n, 2))]
+        if curr_pval < cutoff:
+            n = int(n / 2)
+            curr_pval = kstwo(n).sf(ksstat)
+        elif curr_pval > cutoff:
+            n = int(n * 1.5)
+            curr_pval = kstwo(n).sf(ksstat)
+    if cache:
+        cache[(round_to_sigfigs(ksstat, 2), n)] = n
+        dump_dict_pkl(cache, 'pickles/find_n_cache.pickle')
+    return n
+
+def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, completed_r_depth = 1, completed_eta_depth = 1):
+    '''
+    Perform coordinate descent optimization to find the best parameters (r, eta) for a generalized gamma distribution
+    that minimizes the Kolmogorov-Smirnov (KS) statistic for the given `sample`.
+    
+    Args:
+       sample (numpy.ndarray): The sample data for which the KS statistic is computed.
+       initial_param (tuple): The initial guess for the parameters (r, eta).
+       r_depth (int): The number of decimal places to search for the optimal value of 'r'.
+       eta_depth (int): The number of decimal places to search for the optimal value of 'eta'.
+       layer (int): The layer index for naming the intermediate pickles.
+       completed_r_depth (int, optional): The number of decimal places already completed for 'r'. Defaults to 1.
+       completed_eta_depth (int, optional): The number of decimal places already completed for 'eta'. Defaults to 1.
+       
+    Returns:
+       tuple: The optimal values of (r, eta) that minimize the KS statistic for the given `sample`.
+
+    Example:
+    `coord_descent_gengamma(obs_x_dict[4], (0.8, 3), 3, 2, 4)` will search through
+    r = range(0.70, 0.90, 0.01), eta = 3. Suppose best value is 0.80 (2 decimals)
+    r = range(0.780, 0.800, 0.001), eta = 3. Suppose best value is r=0.803 (3 decimals)
+    Then
+    r = 0.803, eta = range(2.9, 3.1, 0.01). Suppose best value is eta=3.01 (2 decimals)
+
+    returns 0.803, 3.01
+    '''
+    r_0, eta_0 = initial_param
+
+    for d in np.arange(completed_r_depth, r_depth):
+            
+        r_range = np.arange(r_0 - 10.0**(-d), r_0 + 10.0**(-d), 10.0**(-d-1)) 
+        eta_range = [eta_0]
+        add_cdfs(r_range, eta_range, 10000, True, f'layer{layer}_')
+        layer_cdfs = combine_pickles(f'layer{layer}_10000')
+        ksstats, best_param, min_stat = gridsearch(sample, layer_cdfs)
+        r_0 = round_to_sigfigs(best_param[0], d+1)
+
+
+    for d in np.arange(completed_eta_depth, eta_depth):
+            
+        r_range = [r_0]
+        eta_range = np.arange(max(eta_0 - 10.0**(-d), 0), eta_0 + 10.0**(-d), 10.0**(-d-1)) 
+        add_cdfs(r_range, eta_range, 10000, True, f'layer{layer}_')
+        layer_cdfs = combine_pickles(f'layer{layer}_10000')
+        ksstats, best_param, min_stat = gridsearch(sample, layer_cdfs)
+        eta_0 = round_to_sigfigs(best_param[1], d+1)
+
+    return (r_0, eta_0)
