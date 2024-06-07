@@ -1,9 +1,7 @@
 import numpy as np
 import pandas as pd
 import scipy
-import seaborn as sns
-from scipy import integrate, interpolate  
-from scipy.stats import gengamma, laplace, norm, kstwo, ks_1samp
+from scipy import integrate, interpolate, stats
 from pathlib import Path
 import pickle
 import os
@@ -18,7 +16,7 @@ def sample_prior(r, eta, size=1):
     eta : shape parameter, controls roundedness of peak
     size : integer specifying number of samples required
     '''
-    vars = gengamma.rvs(a = (eta + 1.5)/r, c = r, size = size)
+    vars = stats.gengamma.rvs(a = (eta + 1.5)/r, c = r, size = size)
     x = np.random.normal(scale = vars, size=size)
     return x
 
@@ -40,10 +38,10 @@ def kstest_custom(x, cdf, return_loc = False):
     d = max(dplus[plus_amax], dminus[minus_amax])
     if return_loc:
         if d == plus_amax:
-            return d, kstwo.sf(d, n), loc_max
+            return d, stats.kstwo.sf(d, n), loc_max
         else:
-            return d, kstwo.sf(d, n), loc_min
-    return d, kstwo.sf(d, n)
+            return d, stats.kstwo.sf(d, n), loc_min
+    return d, stats.kstwo.sf(d, n)
 
 def create_obs_x(data_dict, layer, only_diag = False):
     df = data_dict[layer]
@@ -382,13 +380,13 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
         pkl_path = os.path.join(FOLDER_PATH, f'{round_to_sigfigs(r_range[0], 6)}-{round_to_sigfigs(r_range[-1], 6)}_{min_eta}.pickle')
         dump_dict_pkl(grouped_r_cdf, pkl_path, overwrite=False)
 
-    print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
+    # print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
 def load_pkl(path):
     if os.path.isfile(path):
         with open(path, 'rb') as handle:
             obj = pickle.load(handle)
-        return object
+        return obj
     else:
         raise Exception("File does not exist, check the path again")
     
@@ -427,17 +425,17 @@ def find_n_fixed_pval_stat(ksstat: float, n: int, cutoff=0.05, cache = True):
         if (round_to_sigfigs(ksstat, 2), round_to_sigfigs(n, 2)) in cache:
             return cache[(round_to_sigfigs(ksstat, 2), round_to_sigfigs(n, 2))]
 
-    curr_pval = kstwo(n).sf(ksstat)
+    curr_pval = stats.kstwo(n).sf(ksstat)
     while not np.isclose(curr_pval, cutoff, atol=0.01):
 
         if (round_to_sigfigs(ksstat, 2), round_to_sigfigs(n, 2)) in cache:
             return cache[(round_to_sigfigs(ksstat, 2), round_to_sigfigs(n, 2))]
         if curr_pval < cutoff:
             n = int(n / 2)
-            curr_pval = kstwo(n).sf(ksstat)
+            curr_pval = stats.kstwo(n).sf(ksstat)
         elif curr_pval > cutoff:
             n = int(n * 1.5)
-            curr_pval = kstwo(n).sf(ksstat)
+            curr_pval = stats.kstwo(n).sf(ksstat)
     if cache:
         cache[(round_to_sigfigs(ksstat, 2), n)] = n
         dump_dict_pkl(cache, 'pickles/find_n_cache.pickle')
@@ -491,3 +489,45 @@ def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, com
         eta_0 = round_to_sigfigs(best_param[1], d+1)
 
     return (r_0, eta_0)
+
+def coord_descent_scipy(sample, initial_param):
+    '''
+    '''
+    r_0, eta_0 = initial_param
+    find_r_1 = scipy.optimize.minimize_scalar(generate_func(sample, 'gengamma_r', eta_0), method = 'bounded', bounds = (max(0.5, r_0-0.1), r_0+0.1))
+    r_1 = find_r_1['x']
+    find_eta_1 = scipy.optimize.minimize_scalar(generate_func(sample, 'gengamma_eta', r_1), method = 'bounded', bounds = (max(0, eta_0-0.1), eta_0+0.1))
+    eta_1 = find_eta_1['x']
+    find_r_2 = scipy.optimize.minimize_scalar(generate_func(sample, 'gengamma_r', eta_1), method = 'bounded', bounds = (max(0.5, r_1-0.1), r_1+0.1))
+
+    r_2 = find_r_2['x']
+    print(find_r_2['fun'])
+
+    return (r_2, eta_1)
+
+def generate_func(sample, distro, *args):
+    if distro == 'gaussian' or distro == 'normal':
+        def var_func(var):
+            cdf = scipy.stats.norm(scale = var).cdf
+            return compute_ksstat(sample, cdf)
+        return var_func
+    elif distro == 'laplace':
+        def var_func(var):
+            cdf = scipy.stats.laplace(scale = var).cdf
+            return compute_ksstat(sample, cdf)
+        return var_func
+    elif distro == 'gengamma_r':
+        eta = args[0]
+        def r_func(r):
+            print(r, eta)
+            cdf = compute_prior_cdf(r, eta, 10000)
+            return compute_ksstat(sample, cdf)
+        return r_func
+    elif distro == 'gengamma_eta':
+        r = args[0]
+        def eta_func(eta):
+            print(r, eta)
+            cdf = compute_prior_cdf(r, eta, 10000)
+            return compute_ksstat(sample, cdf) 
+        return eta_func
+    print("Please enter a valid argument for `distro` : 'gaussian', 'laplace', 'gengamma_r', 'gengamma_eta'")

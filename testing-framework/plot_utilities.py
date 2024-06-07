@@ -1,6 +1,4 @@
-import numpy as np
 import seaborn as sns
-from scipy.stats import ks_1samp
 import matplotlib.pyplot as plt
 from utilities import *
 
@@ -172,73 +170,73 @@ def create_contour_plot(df, metric):
     
     plt.show()
 
-def visualize_cdf(obs_x, r, eta, n_samples = 1000, all_cdfs = None, layer = None):
+def visualize_cdf(sample, r, eta, n_samples = 1000, all_cdfs = None, layer = None):
     """
-    Visualize the gap between the empirical CDF and the true CDF.
+    Visualize the gap between the empirical CDF and the Computed CDF.
     
     Args:
-        obs_x (np.ndarray): Observed data.
+        sample (np.ndarray): Observed data.
         r (float): r value.
         eta (float): eta value.
-        all_cdfs (dict): Dictionary containing true CDFs.
+        all_cdfs (dict): Dictionary containing Computed CDFs.
         
     Returns:
         distance (float): The Kolmogorov-Smirnov statistic.
-        location (float): The location of the maximum deviation between the empirical and true CDFs.
+        location (float): The location of the maximum deviation between the empirical and computed CDFs.
     """
-    xs = np.linspace(np.min(obs_x), np.max(obs_x), 10000)
-    obs_x = np.sort(obs_x)
-    n = len(obs_x)
+    xs = np.linspace(np.min(sample), np.max(sample), 10000)
+    sample = np.sort(sample)
+    n = len(sample)
     if all_cdfs and (r, eta) in all_cdfs:
         null_cdf = all_cdfs[(r, eta)]
     else:
         null_cdf = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples)
-    plt.plot(obs_x, np.arange(1, n+1)/n, label='Empirical CDF')
-    plt.plot(xs, null_cdf(xs), label='True CDF')
-    result = ks_1samp(obs_x, null_cdf)
+    plt.plot(sample, np.arange(1, n+1)/n, label='Empirical CDF')
+    plt.plot(xs, null_cdf(xs), label='Computed CDF')
+    result = stats.ks_1samp(sample, null_cdf)
     distance = result.statistic
     location = result.statistic_location
-    emp_cdf_at_loc = np.searchsorted(obs_x, location, side='right') / n
-    true_cdf_at_loc = null_cdf(location)
-    plt.vlines(location, emp_cdf_at_loc, true_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)} \n at x={np.round(location, 3)}', color = 'xkcd:bright red')
+    emp_cdf_at_loc = np.searchsorted(sample, location, side='right') / n
+    computed_cdf_at_loc = null_cdf(location)
+    plt.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)} \n at x={np.round(location, 3)}', color = 'xkcd:bright red')
     if layer:
-        plt.title(f'Layer {layer} Empirical CDF vs True CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+        plt.title(f'Layer {layer} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
     else:
-        plt.title(f'Empirical CDF vs True CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
+        plt.title(f'Empirical CDF vs Computed CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
     plt.legend()
     plt.show()
 
     return distance, location
 
-def visualize_pdf(obs_x, r, eta, layer=None):
+def visualize_pdf(sample, r, eta, layer=None):
     xs, pdf = compute_prior_pdf(r, eta)
-    plt.plot(xs, pdf, label = 'True CDF')
+    plt.plot(xs, pdf, label = 'Computed CDF')
     sns.kdeplot(sample, label = 'Empirical CDF (KDE)')
     if layer:
-        plt.title(f'Layer {layer} Empirical PDF vs True PDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+        plt.title(f'Layer {layer} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
     else:
-        plt.title(f'Empirical PDF vs True PDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
+        plt.title(f'Empirical PDF vs Computed PDF (r={r}, eta={eta})')
     plt.legend()
 
-def visualize_cdf_pdf(obs_x, params, distro = 'gengamma', n_samples=10000, all_cdfs=None, layer=None):
+def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_samples=10000, all_cdfs=None, layer=None):
     """
-    Visualize the gap between the empirical CDF/PDF and the true CDF/PDF.
+    Visualize the gap between the empirical CDF/PDF and the Computed CDF/PDF.
 
     Args:
-        obs_x (np.ndarray): Observed data.
+        sample (np.ndarray): Observed data.
         r (float): r value.
         eta (float): eta value.
-        n_samples (int): Number of samples for the true CDF/PDF.
-        all_cdfs (dict): Dictionary containing true CDFs.
+        n_samples (int): Number of samples for the computed CDF/PDF.
+        all_cdfs (dict): Dictionary containing computed CDFs.
         layer (int or None): Layer index (for titling purposes).
 
     Returns:
         distance (float): The Kolmogorov-Smirnov statistic.
-        location (float): The location of the maximum deviation between the empirical and true CDFs.
+        location (float): The location of the maximum deviation between the empirical and computed CDFs.
     """
-    xs = np.linspace(np.min(obs_x), np.max(obs_x), 10000)
-    obs_x = np.sort(obs_x)
-    n = len(obs_x)
+    xs = np.linspace(np.min(sample), np.max(sample), 10000)
+    sample = np.sort(sample)
+    n = len(sample)
     
     if distro == 'gengamma':
         r = params[0]
@@ -248,38 +246,87 @@ def visualize_cdf_pdf(obs_x, params, distro = 'gengamma', n_samples=10000, all_c
         else:
             null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples)
     elif distro == 'gaussian' or distro == 'normal':
-        null_cdf = stats.norm(scale=params).cdf
+        null_cdf = scipy.stats.norm(scale=params).cdf
     elif distro == 'laplace':
-        null_cdf = stats.laplace(scale=params).cdf
+        null_cdf = scipy.stats.laplace(scale=params).cdf
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    if log_scale:
 
-    # Empirical CDF vs True CDF
-    ax1.plot(obs_x, np.arange(1, n+1)/n, label='Empirical CDF')
-    ax1.plot(xs, null_cdf(xs), label='True CDF')
-    result = ks_1samp(obs_x, null_cdf)
-    distance = result.statistic
-    location = result.statistic_location
-    emp_cdf_at_loc = np.searchsorted(obs_x, location, side='right') / n
-    true_cdf_at_loc = null_cdf(location)
-    ax1.vlines(location, emp_cdf_at_loc, true_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
-    if layer:
-        ax1.set_title(f'Layer {layer} Empirical CDF vs True CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(24, 6))
+
+        # Empirical CDF vs Computed CDF
+        ax1.set_xlim(left = -25, right = 25)
+        ax1.plot(sample, np.arange(1, n+1)/n, label='Empirical CDF')
+        ax1.plot(xs, null_cdf(xs), label='Computed CDF')
+        result = stats.ks_1samp(sample, null_cdf)
+        distance = result.statistic
+        location = result.statistic_location
+        emp_cdf_at_loc = np.searchsorted(sample, location, side='right') / n
+        computed_cdf_at_loc = null_cdf(location)
+        ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
+        if layer:
+            ax1.set_title(f'Layer {layer} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+        else:
+            ax1.set_title(f'Empirical CDF vs Computed CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
+        ax1.legend()
+
+        # Empirical PDF vs Computed PDF
+        ax2.set_xlim(left = -25, right = 25)
+        xs_pdf, computed_pdf = compute_prior_pdf(r, eta, tail_bound=0.01)
+        bw = 0.05
+        sns.kdeplot(sample, bw_method = bw, ax=ax2, label='Empirical PDF (KDE, bw={bw})')
+        ax2.plot(xs_pdf, computed_pdf, label='Computed PDF')
+        if layer:
+            ax2.set_title(f'Layer {layer} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
+        else:
+            ax2.set_title(f'Empirical PDF vs Computed PDF (r={r}, eta={eta})')
+        ax2.legend()
+
+        # Log Scale
+        ax3.set_xlim(left = -25, right = 25)
+        ax3.set_ylim(bottom = 10**-4, top=10)
+        bw = 0.05
+        sns.kdeplot(ax = ax3, x = sample, bw_method = bw, log_scale=[False, True], label = f"Empirical PDF (KDE, bw={bw})")
+        ax3.plot(xs_pdf, computed_pdf, label = "Computed PDF")
+        if layer:
+            ax3.set_title(f'Layer {layer} Log Scale :\n Empirical PDF vs Computed PDF (r={r}, eta={eta})')
+        else:
+            ax3.set_title(f'Log Scale:\nEmpirical PDF vs Computed PDF (r={r}, eta={eta})')
+        ax3.legend()
+
+        plt.tight_layout()
+        plt.show()
+
     else:
-        ax1.set_title(f'Empirical CDF vs True CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
-    ax1.legend()
 
-    # Empirical PDF vs True PDF
-    xs_pdf, true_pdf = compute_prior_pdf(r, eta)
-    sns.kdeplot(obs_x, ax=ax2, label='Empirical PDF (KDE)')
-    ax2.plot(xs_pdf, true_pdf, label='True PDF')
-    if layer:
-        ax2.set_title(f'Layer {layer} Empirical PDF vs True PDF \n (r={r}, eta={eta})')
-    else:
-        ax2.set_title(f'Empirical PDF vs True PDF (r={r}, eta={eta})')
-    ax2.legend()
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
-    plt.tight_layout()
-    plt.show()
+        # Empirical CDF vs Computed CDF
+        ax1.set_xlim(left = -25, right = 25)
+        ax1.plot(sample, np.arange(1, n+1)/n, label='Empirical CDF')
+        ax1.plot(xs, null_cdf(xs), label='Computed CDF')
+        result = stats.ks_1samp(sample, null_cdf)
+        distance = result.statistic
+        location = result.statistic_location
+        emp_cdf_at_loc = np.searchsorted(sample, location, side='right') / n
+        computed_cdf_at_loc = null_cdf(location)
+        ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
+        if layer:
+            ax1.set_title(f'Layer {layer} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+        else:
+            ax1.set_title(f'Empirical CDF vs Computed CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
+        ax1.legend()
 
-    return distance, location
+        # Empirical PDF vs Computed PDF
+        ax2.set_xlim(left = -25, right = 25)
+        xs_pdf, computed_pdf = compute_prior_pdf(r, eta, tail_bound=0.01)
+        bw = 0.05
+        sns.kdeplot(sample, bw_method = bw, ax=ax2, label='Empirical PDF (KDE, bw={bw})')
+        ax2.plot(xs_pdf, computed_pdf, label='Computed PDF')
+        if layer:
+            ax2.set_title(f'Layer {layer} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
+        else:
+            ax2.set_title(f'Empirical PDF vs Computed PDF (r={r}, eta={eta})')
+        ax2.legend()
+    
+    return fig
