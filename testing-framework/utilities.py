@@ -181,8 +181,10 @@ def compute_prior_cdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent
         # Alternative with Simpson's: prior_cdf[i] = integrate.simps(prior_pdf[:i+1], xs[:i+1])
     normalizer = prior_cdf[-1]
     first = prior_cdf[1]
+
     assert 1.05 > normalizer > 0.95
     assert 0.05 > first > -0.05
+    
     prior_cdf = prior_cdf/normalizer   
 
     k = int(0.01*n_samples)
@@ -519,15 +521,27 @@ def generate_func(sample, distro, *args):
     elif distro == 'gengamma_r':
         eta = args[0]
         def r_func(r):
-            print(r, eta)
-            cdf = compute_prior_cdf(r, eta, 10000)
+            cache = pd.read_pickle('CDFs/optimize_cache.pickle')
+            if (r, eta) in cache:
+                cdf = cache[(r, eta)]
+                return compute_ksstat(sample, cdf)
+            else:
+                cdf = compute_prior_cdf(r, eta, 10000)
+            cache[(r, eta)] = cdf
+            pd.to_pickle(cache, "CDFs/optimize_cache.pickle")
             return compute_ksstat(sample, cdf)
         return r_func
     elif distro == 'gengamma_eta':
         r = args[0]
         def eta_func(eta):
-            print(r, eta)
-            cdf = compute_prior_cdf(r, eta, 10000)
-            return compute_ksstat(sample, cdf) 
+            cache = pd.read_pickle('CDFs/optimize_cache.pickle')
+            if (r, eta) in cache:
+                cdf = cache[(r, eta)]
+                return compute_ksstat(sample, cdf)
+            else:
+                cdf = compute_prior_cdf(r, eta, 10000)
+            cache[(r, eta)] = cdf
+            pd.to_pickle(cache, "CDFs/optimize_cache.pickle")
+            return compute_ksstat(sample, cdf)
         return eta_func
     print("Please enter a valid argument for `distro` : 'gaussian', 'laplace', 'gengamma_r', 'gengamma_eta'")

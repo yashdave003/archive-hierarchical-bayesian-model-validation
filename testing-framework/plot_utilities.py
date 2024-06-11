@@ -218,7 +218,7 @@ def visualize_pdf(sample, r, eta, layer=None):
         plt.title(f'Empirical PDF vs Computed PDF (r={r}, eta={eta})')
     plt.legend()
 
-def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_samples=10000, all_cdfs=None, layer=None):
+def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_samples=10000, all_cdfs=None, layer=None, bw = 0.05, bw_log = 0.05):
     """
     Visualize the gap between the empirical CDF/PDF and the Computed CDF/PDF.
 
@@ -239,16 +239,20 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
     n = len(sample)
     
     if distro == 'gengamma':
-        r = params[0]
-        eta = params[1]
+        r, eta = params
         if all_cdfs and (r, eta) in all_cdfs:
             null_cdf = all_cdfs[(r, eta)]
         else:
             null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples)
+        xs_pdf, computed_pdf = compute_prior_pdf(r, eta, tail_bound=0.01)
     elif distro == 'gaussian' or distro == 'normal':
-        null_cdf = scipy.stats.norm(scale=params).cdf
+        null_cdf = stats.norm(scale=params).cdf
+        xs_pdf = np.linspace(-30, 30, 10000)
+        computed_pdf = stats.norm(scale=params).pdf(xs)
     elif distro == 'laplace':
-        null_cdf = scipy.stats.laplace(scale=params).cdf
+        null_cdf = stats.laplace(scale=params).cdf
+        xs_pdf = np.linspace(-30, 30, 10000)
+        computed_pdf = stats.laplace(scale=params).pdf(xs)
 
     if log_scale:
 
@@ -263,35 +267,31 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         location = result.statistic_location
         emp_cdf_at_loc = np.searchsorted(sample, location, side='right') / n
         computed_cdf_at_loc = null_cdf(location)
+
         ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
-        if layer:
-            ax1.set_title(f'Layer {layer} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+        if distro == 'gengamma':
+            ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+            ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
+            ax3.set_title(f'{f"Layer {layer}" if layer else ""} Log Scale:\n Empirical PDF vs Computed PDF (r={r}, eta={eta})')
         else:
-            ax1.set_title(f'Empirical CDF vs Computed CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
-        ax1.legend()
+            ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n {distro} (0, {params})')
+            ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n {distro} (0, {params})')
+            ax3.set_title(f'{f"Layer {layer}" if layer else ""} Log Scale:\n Empirical PDF vs Computed PDF {distro} (0, {params})')
 
         # Empirical PDF vs Computed PDF
         ax2.set_xlim(left = -25, right = 25)
-        xs_pdf, computed_pdf = compute_prior_pdf(r, eta, tail_bound=0.01)
-        bw = 0.05
-        sns.kdeplot(sample, bw_method = bw, ax=ax2, label='Empirical PDF (KDE, bw={bw})')
+        
+        sns.kdeplot(sample, bw_method = bw, ax=ax2, label=f'Empirical PDF (KDE, bw={bw})')
         ax2.plot(xs_pdf, computed_pdf, label='Computed PDF')
-        if layer:
-            ax2.set_title(f'Layer {layer} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
-        else:
-            ax2.set_title(f'Empirical PDF vs Computed PDF (r={r}, eta={eta})')
-        ax2.legend()
-
+        
         # Log Scale
         ax3.set_xlim(left = -25, right = 25)
         ax3.set_ylim(bottom = 10**-4, top=10)
-        bw = 0.05
-        sns.kdeplot(ax = ax3, x = sample, bw_method = bw, log_scale=[False, True], label = f"Empirical PDF (KDE, bw={bw})")
+        sns.kdeplot(ax = ax3, x = sample, bw_method = bw, log_scale=[False, True], label = f"Empirical PDF (KDE, bw={bw_log})")
         ax3.plot(xs_pdf, computed_pdf, label = "Computed PDF")
-        if layer:
-            ax3.set_title(f'Layer {layer} Log Scale :\n Empirical PDF vs Computed PDF (r={r}, eta={eta})')
-        else:
-            ax3.set_title(f'Log Scale:\nEmpirical PDF vs Computed PDF (r={r}, eta={eta})')
+
+        ax1.legend()
+        ax2.legend()
         ax3.legend()
 
         plt.tight_layout()
@@ -311,22 +311,18 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         emp_cdf_at_loc = np.searchsorted(sample, location, side='right') / n
         computed_cdf_at_loc = null_cdf(location)
         ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
-        if layer:
-            ax1.set_title(f'Layer {layer} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+        if distro =='gengamma':
+            ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+            ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
         else:
-            ax1.set_title(f'Empirical CDF vs Computed CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
+            ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n {distro} (0, {params})')
+            ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n {distro} (0, {params})')
         ax1.legend()
 
         # Empirical PDF vs Computed PDF
         ax2.set_xlim(left = -25, right = 25)
-        xs_pdf, computed_pdf = compute_prior_pdf(r, eta, tail_bound=0.01)
-        bw = 0.05
-        sns.kdeplot(sample, bw_method = bw, ax=ax2, label='Empirical PDF (KDE, bw={bw})')
+        sns.kdeplot(sample, bw_method = bw, ax=ax2, label=f'Empirical PDF (KDE, bw={bw})')
         ax2.plot(xs_pdf, computed_pdf, label='Computed PDF')
-        if layer:
-            ax2.set_title(f'Layer {layer} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
-        else:
-            ax2.set_title(f'Empirical PDF vs Computed PDF (r={r}, eta={eta})')
         ax2.legend()
     
     return fig
