@@ -125,7 +125,7 @@ def dict_to_pickle(converted_directory, converted, name):
     with open(filename+".pickle", 'wb') as handle:
         pickle.dump(converted, handle)
 
-def compute_prior_cdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = False):
+def compute_prior_cdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = False, eng=None):
 
     '''
     Returns PPoly-type function that approximates the prior CDF of the signal x
@@ -208,7 +208,7 @@ def compute_prior_cdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent
     else:
         return poly
 
-def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = True):
+def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = True, eng= None):
 
     '''
     Returns PPoly-type function that approximates the prior PDF of the signal x
