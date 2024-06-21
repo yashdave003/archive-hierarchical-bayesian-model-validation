@@ -296,6 +296,52 @@ def compute_ksstat(sample, cdf, sorted_sample = True):
     dplus, dminus = (np.arange(1.0, n + 1) / n - cdfvals), (cdfvals - np.arange(0.0, n)/n)
     return np.max(np.append(dplus, dminus))
 
+def compute_ksstat_tail(sample, cdf, sorted_sample = True, tail_cutoff = 2):
+    '''
+    Computes the KS-Test Statistic, assumes that the sample is already sorted
+    '''
+    if not sorted_sample:
+        sample = np.sort(sample)
+
+    tail_idxs = np.argwhere(np.abs(sample) > tail_cutoff)
+    tails = sample[tail_idxs]
+
+    if isinstance(cdf, tuple):
+        r = cdf[0]
+        eta = cdf[1]
+        cdf = compute_prior_cdf(r, eta, 10000)
+    
+    n = len(sample)
+    cdfvals = cdf(sample)
+    dplus, dminus = (np.arange(1.0, n + 1) / n - cdfvals), (cdfvals - np.arange(0.0, n)/n)
+    dplus_t, dminus_t = dplus[tail_idxs], dminus[tail_idxs]
+    return np.max(np.append(dplus_t, dminus_t))
+
+def compute_ksratio(sample, cdf, sorted_sample = True, tail_cutoff = 2):
+    '''
+    Computes the ratio of empirical and computed cdfs, assumes that the sample is already sorted
+    '''
+    if not sorted_sample:
+        sample = np.sort(sample)
+    tail_idxs = np.argwhere(np.abs(sample) > tail_cutoff)
+    tails = sample[tail_idxs]
+
+    if isinstance(cdf, tuple):
+        r = cdf[0]
+        eta = cdf[1]
+        cdf = compute_prior_cdf(r, eta, 10000)
+    
+    n = len(sample)
+    cdfvals = cdf(sample)
+    tail_vals = cdf(tails)
+    d = (np.arange(1.0, n + 1) / n)
+    ratios = d / cdfvals
+    tail_ratios = d[tail_idxs] / tail_vals
+    
+    # empirical / computed
+    return (round_to_sigfigs(np.min(ratios)), round_to_sigfigs(np.max(ratios))), (round_to_sigfigs(np.min(tail_ratios)), round_to_sigfigs(np.max(tail_ratios)))
+
+
 def gridsearch(sample, all_cdfs, top_k = 1):
     '''
     Takes in a sample and list of CDFs, 

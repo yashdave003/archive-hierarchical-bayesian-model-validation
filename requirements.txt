@@ -1,0 +1,9 @@
+matlab==0.1
+matplotlib==3.8.2
+numba==0.59.1
+numpy==1.26.3
+pandas==2.2.2
+Pillow==10.3.0
+scipy==1.13.1
+seaborn==0.13.2
+PyWavelets

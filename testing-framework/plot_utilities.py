@@ -170,55 +170,76 @@ def create_contour_plot(df, metric):
     
     plt.show()
 
-def visualize_cdf(sample, r, eta, n_samples = 1000, all_cdfs = None, layer = None):
+def visualize_cdf(sample, params, distro='gengamma', n_samples=10000, interval=None, provided_loc=None, all_cdfs=None, layer=None):
     """
-    Visualize the gap between the empirical CDF and the Computed CDF.
-    
+    Visualize the gap between the empirical CDF and the computed CDF.
+
     Args:
         sample (np.ndarray): Observed data.
-        r (float): r value.
-        eta (float): eta value.
-        all_cdfs (dict): Dictionary containing Computed CDFs.
-        
+        params (tuple): Parameters for the computed CDF.
+        distro (str): Distribution to use for the computed CDF ('gengamma', 'gaussian', or 'laplace').
+        n_samples (int): Number of samples for the computed CDF.
+        interval (tuple): Optional interval for the x-axis limits.
+        provided_loc (float): Optional location to compute the deviation at.
+        all_cdfs (dict): Dictionary containing computed CDFs.
+        layer (int or None): Layer index (for titling purposes).
+
     Returns:
-        distance (float): The Kolmogorov-Smirnov statistic.
-        location (float): The location of the maximum deviation between the empirical and computed CDFs.
+        fig (matplotlib.figure.Figure): The figure object containing the plot.
     """
     xs = np.linspace(np.min(sample), np.max(sample), 10000)
     sample = np.sort(sample)
     n = len(sample)
-    if all_cdfs and (r, eta) in all_cdfs:
-        null_cdf = all_cdfs[(r, eta)]
-    else:
-        null_cdf = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples)
-    plt.plot(sample, np.arange(1, n+1)/n, label='Empirical CDF')
-    plt.plot(xs, null_cdf(xs), label='Computed CDF')
+
+    if distro == 'gengamma':
+        r, eta = params
+        if all_cdfs and (r, eta) in all_cdfs:
+            null_cdf = all_cdfs[(r, eta)]
+        else:
+            null_cdf = stats.gengamma(r, 0, eta).cdf
+    elif distro == 'gaussian' or distro == 'normal':
+        null_cdf = stats.norm(scale=params).cdf
+    elif distro == 'laplace':
+        null_cdf = stats.laplace(scale=params).cdf
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    ax.set_xlim(left=-25, right=25)
+    if interval:
+        ax.set_xlim(left=interval[0], right=interval[1])
+
+    ax.plot(sample, np.arange(1, n+1)/n, label='Empirical CDF')
+    ax.plot(xs, null_cdf(xs), label='Computed CDF')
+
     result = stats.ks_1samp(sample, null_cdf)
     distance = result.statistic
     location = result.statistic_location
     emp_cdf_at_loc = np.searchsorted(sample, location, side='right') / n
     computed_cdf_at_loc = null_cdf(location)
-    plt.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)} \n at x={np.round(location, 3)}', color = 'xkcd:bright red')
-    if layer:
-        plt.title(f'Layer {layer} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+
+    ax.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--',
+              label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}',
+              color='xkcd:bright red')
+
+    if provided_loc is not None:
+        emp_cdf_at_provided_loc = np.searchsorted(sample, provided_loc, side='right') / n
+        computed_cdf_at_provided_loc = null_cdf(provided_loc)
+        ax.vlines(provided_loc, emp_cdf_at_provided_loc, computed_cdf_at_provided_loc, linestyles='--',
+                  label=f'Deviation: {np.round(emp_cdf_at_provided_loc - computed_cdf_at_provided_loc, 6)}\nat x={np.round(provided_loc, 6)}',
+                  color='xkcd:shamrock green')
+
+    if distro == 'gengamma':
+        r, eta = params
+        ax.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
     else:
-        plt.title(f'Empirical CDF vs Computed CDF (r={r}, eta={eta}) \n with p-value:{np.round(result.pvalue, 8)}')
-    plt.legend()
-    plt.show()
+        ax.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n {distro} (0, {params})')
 
-    return distance, location
+    ax.legend()
+    plt.tight_layout()
 
-def visualize_pdf(sample, r, eta, layer=None):
-    xs, pdf = compute_prior_pdf(r, eta)
-    plt.plot(xs, pdf, label = 'Computed CDF')
-    sns.kdeplot(sample, label = 'Empirical CDF (KDE)')
-    if layer:
-        plt.title(f'Layer {layer} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
-    else:
-        plt.title(f'Empirical PDF vs Computed PDF (r={r}, eta={eta})')
-    plt.legend()
+    return fig
 
-def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_samples=10000, all_cdfs=None, layer=None, bw = 0.05, bw_log = 0.05):
+def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_samples=10000, interval = None, provided_loc = None, all_cdfs=None, layer=None, bw = 0.05, bw_log = 0.05):
     """
     Visualize the gap between the empirical CDF/PDF and the Computed CDF/PDF.
 
@@ -260,6 +281,8 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
 
         # Empirical CDF vs Computed CDF
         ax1.set_xlim(left = -25, right = 25)
+        if interval:
+            ax1.set_xlim(left = interval[0], right = interval[1])
         ax1.plot(sample, np.arange(1, n+1)/n, label='Empirical CDF')
         ax1.plot(xs, null_cdf(xs), label='Computed CDF')
         result = stats.ks_1samp(sample, null_cdf)
@@ -269,6 +292,10 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         computed_cdf_at_loc = null_cdf(location)
 
         ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
+
+        emp_cdf_at_provided_loc = np.searchsorted(sample, provided_loc, side='right') / n
+        computed_cdf_at_provided_loc = null_cdf(provided_loc)
+        ax1.vlines(provided_loc, emp_cdf_at_provided_loc, computed_cdf_at_provided_loc, linestyles='--', label=f'Deviation: {np.round(emp_cdf_at_provided_loc - computed_cdf_at_provided_loc, 6)}\nat x={np.round(provided_loc, 6)}', color='xkcd:shamrock green')
         if distro == 'gengamma':
             ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
             ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
@@ -280,12 +307,16 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
 
         # Empirical PDF vs Computed PDF
         ax2.set_xlim(left = -25, right = 25)
+        if interval:
+            ax2.set_xlim(left = interval[0], right = interval[1])
         
         sns.kdeplot(sample, bw_method = bw, ax=ax2, label=f'Empirical PDF (KDE, bw={bw})')
         ax2.plot(xs_pdf, computed_pdf, label='Computed PDF')
         
         # Log Scale
         ax3.set_xlim(left = -25, right = 25)
+        if interval:
+            ax3.set_xlim(left = interval[0], right = interval[1])
         ax3.set_ylim(bottom = 10**-4, top=10)
         sns.kdeplot(ax = ax3, x = sample, bw_method = bw, log_scale=[False, True], label = f"Empirical PDF (KDE, bw={bw_log})")
         ax3.plot(xs_pdf, computed_pdf, label = "Computed PDF")
