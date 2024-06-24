@@ -1,7 +1,7 @@
 %% generate pdf for gaussian with generalized gamma variances
 %matlab.engine.shareEngine
 %% set parameters
-function res = testIntegrals(r,eta,x)
+function res = compute_prior(r,eta,x)
     
     beta = (eta + 1.5)/r; % change to standard parametrization
     scale = 1;
