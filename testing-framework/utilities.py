@@ -12,8 +12,8 @@ from PIL import Image
 def sample_prior(r, eta, size=1):
     '''
     Samples from prior distribution of signal x
-    r : shape parameter, must be > 0
-    eta : shape parameter, controls roundedness of peak
+    r : shape parameter, must be != 0
+    eta : shape parameter, controls roundedness of peak > 0
     size : integer specifying number of samples required
     '''
     vars = stats.gengamma.rvs(a = (eta + 1.5)/r, c = r, size = size)
@@ -163,7 +163,7 @@ def compute_prior_cdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent
             return (1./(np.sqrt(2*np.pi)*theta)) * np.exp(-0.5*(x/theta)**2)
 
         def gen_gamma_density(theta):
-            return (r/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
+            return (abs(r)/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
 
         def integrand(theta):
             return gauss_density(theta) * gen_gamma_density(theta)
@@ -248,7 +248,7 @@ def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent
             return (1./(np.sqrt(2*np.pi)*theta)) * np.exp(-0.5*(x/theta)**2)
 
         def gen_gamma_density(theta):
-            return (r/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
+            return (abs(r)/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
 
         def integrand(theta):
             return gauss_density(theta) * gen_gamma_density(theta)

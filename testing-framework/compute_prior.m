@@ -21,7 +21,7 @@ function res = compute_prior(r,eta,x)
     
         %% define integrands
     gauss_density = @(theta) (1./(sqrt(2*pi)*theta)).*exp(-0.5*(x./theta).^2);
-    gen_gamma_density = @(theta) (r/gamma(beta))*(1/scale)*(theta/scale).^(r*beta - 1).*...
+    gen_gamma_density = @(theta) (abs(r)/gamma(beta))*(1/scale)*(theta/scale).^(r*beta - 1).*...
         exp(-(theta/scale).^r);
     integrand = @(theta) gauss_density(theta).*gen_gamma_density(theta);
     
