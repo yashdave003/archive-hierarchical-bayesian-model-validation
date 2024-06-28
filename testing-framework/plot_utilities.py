@@ -196,11 +196,13 @@ def visualize_cdf(sample, params, distro='gengamma', n_samples=10000, interval=N
         if all_cdfs and (r, eta) in all_cdfs:
             null_cdf = all_cdfs[(r, eta)]
         else:
-            null_cdf = stats.gengamma(r, 0, eta).cdf
+            null_cdf = compute_prior_cdf(r, eta)
     elif distro == 'gaussian' or distro == 'normal':
         null_cdf = stats.norm(scale=params).cdf
     elif distro == 'laplace':
         null_cdf = stats.laplace(scale=params).cdf
+    elif distro == 't':
+        null_cdf = stats.t(df=params[0], scale = params[1]).cdf
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -274,6 +276,10 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         null_cdf = stats.laplace(scale=params).cdf
         xs_pdf = np.linspace(-30, 30, 10000)
         computed_pdf = stats.laplace(scale=params).pdf(xs)
+    elif distro == 't':
+        null_cdf = stats.t(df=2,scale=params).cdf
+        xs_pdf = np.linspace(-30, 30, 10000)
+        computed_pdf = stats.t(df=2, scale=params).pdf(xs)
 
     if log_scale:
 

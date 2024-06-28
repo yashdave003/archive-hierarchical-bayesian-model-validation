@@ -12,8 +12,8 @@ from PIL import Image
 def sample_prior(r, eta, size=1):
     '''
     Samples from prior distribution of signal x
-    r : shape parameter, must be != 0
-    eta : shape parameter, controls roundedness of peak > 0
+    r : shape parameter, must be nonzero
+    eta : shape parameter, controls roundedness of peak
     size : integer specifying number of samples required
     '''
     vars = stats.gengamma.rvs(a = (eta + 1.5)/r, c = r, size = size)
@@ -125,6 +125,63 @@ def dict_to_pickle(converted_directory, converted, name):
     with open(filename+".pickle", 'wb') as handle:
         pickle.dump(converted, handle)
 
+def pdf_to_cdf(xs, prior_pdf, n_samples=10000, support=False):
+
+    '''
+    Returns PPoly-type function that approximates the prior CDF of the signal x
+    r : shape parameter controlling rate of exponentional decay
+    eta : controls roundedness of peak, and hence sparsity
+    scale : scale parameter
+    n_samples : number of points used to numerically approximate CDF
+    tail_bound : Uses Chebyshev's Inequality to bound the region of the CDF that is outside the coverage of xs
+    n_tail : Sets the number of points tha lie outside the coverage of xs to approximate tails if need be
+
+    Usage:
+    new_cdf = compute_prior_cdf(r = 0.1, eta = 0.001)
+    new_cdf(0.5343) returns CDF
+    Can also accept arrays
+    '''
+
+    prior_cdf = np.zeros_like(prior_pdf)
+    prior_cdf[0] = 0
+    for i in range(1, len(xs)):
+        prior_cdf[i] = (interpolate.CubicSpline(x = xs[:i+1], y = prior_pdf[:i+1])).integrate(xs[0], xs[i])+0
+
+        # Alternative with Simpson's: prior_cdf[i] = integrate.simps(prior_pdf[:i+1], xs[:i+1])
+    normalizer = prior_cdf[-1]
+    first = prior_cdf[1]
+
+    if not (0.05 > first > -0.05):
+        print("First CDF value:", first)
+    assert 0.05 > first > -0.05
+    if not (1.05 > normalizer > 0.95):
+        print("Last CDF value:", normalizer)
+        assert 1.05 > normalizer > 0.95
+    
+    
+    prior_cdf = prior_cdf/normalizer   
+
+    k = int(0.01*n_samples)
+    zero_padding = np.zeros(k)
+    ones_padding = np.ones(k)
+
+    pad_max = 10e5
+    prior_cdf = np.append(zero_padding, prior_cdf)
+    xs_pad = np.append(np.linspace(-pad_max, xs[0] - 1e-5, k), xs)
+
+    prior_cdf = np.append(prior_cdf, ones_padding)
+    xs_pad = np.append(xs_pad, np.linspace(xs[-1] + 1e-5, pad_max, k))
+
+    poly = interpolate.CubicSpline(x = xs_pad, y = prior_cdf)
+
+    assert np.isclose(poly(-1e10), 0, atol = 1e-8)
+    assert np.isclose(poly(1e10), 1, atol = 1e-8)
+
+    if support:
+        return xs, poly
+    else:
+        return poly
+
 def compute_prior_cdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = False, eng=None):
 
     '''
@@ -182,8 +239,13 @@ def compute_prior_cdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent
     normalizer = prior_cdf[-1]
     first = prior_cdf[1]
 
-    assert 1.05 > normalizer > 0.95
+    if not (0.05 > first > -0.05):
+        print("First CDF value:", first)
     assert 0.05 > first > -0.05
+    if not (1.05 > normalizer > 0.95):
+        print("Last CDF value:", normalizer)
+        assert 1.05 > normalizer > 0.95
+    
     
     prior_cdf = prior_cdf/normalizer   
 
@@ -317,13 +379,13 @@ def compute_ksstat_tail(sample, cdf, sorted_sample = True, tail_cutoff = 2):
     dplus_t, dminus_t = dplus[tail_idxs], dminus[tail_idxs]
     return np.max(np.append(dplus_t, dminus_t))
 
-def compute_ksratio(sample, cdf, sorted_sample = True, tail_cutoff = 2):
+def compute_ksratio(sample, cdf, sorted_sample = True, tail_cutoff = 0):
     '''
     Computes the ratio of empirical and computed cdfs, assumes that the sample is already sorted
     '''
     if not sorted_sample:
         sample = np.sort(sample)
-    tail_idxs = np.argwhere(np.abs(sample) > tail_cutoff)
+    tail_idxs = np.argwhere((np.abs(sample) > tail_cutoff))
     tails = sample[tail_idxs]
 
     if isinstance(cdf, tuple):
@@ -332,14 +394,11 @@ def compute_ksratio(sample, cdf, sorted_sample = True, tail_cutoff = 2):
         cdf = compute_prior_cdf(r, eta, 10000)
     
     n = len(sample)
-    cdfvals = cdf(sample)
     tail_vals = cdf(tails)
     d = (np.arange(1.0, n + 1) / n)
-    ratios = d / cdfvals
-    tail_ratios = d[tail_idxs] / tail_vals
-    
+    tail_ratios = np.nan_to_num(d[tail_idxs] / tail_vals)
     # empirical / computed
-    return (round_to_sigfigs(np.min(ratios)), round_to_sigfigs(np.max(ratios))), (round_to_sigfigs(np.min(tail_ratios)), round_to_sigfigs(np.max(tail_ratios)))
+    return (round_to_sigfigs(np.min(tail_ratios)), round_to_sigfigs(np.max(tail_ratios)))
 
 
 def gridsearch(sample, all_cdfs, top_k = 1):
@@ -562,6 +621,11 @@ def generate_func(sample, distro, *args):
     elif distro == 'laplace':
         def var_func(var):
             cdf = scipy.stats.laplace(scale = var).cdf
+            return compute_ksstat(sample, cdf)
+        return var_func
+    elif distro == 't':
+        def var_func(var):
+            cdf = scipy.stats.t(df = 2, scale = var).cdf
             return compute_ksstat(sample, cdf)
         return var_func
     elif distro == 'gengamma_r':
