@@ -276,10 +276,6 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         null_cdf = stats.laplace(scale=params).cdf
         xs_pdf = np.linspace(-30, 30, 10000)
         computed_pdf = stats.laplace(scale=params).pdf(xs)
-    elif distro == 't':
-        null_cdf = stats.t(df=2,scale=params).cdf
-        xs_pdf = np.linspace(-30, 30, 10000)
-        computed_pdf = stats.t(df=2, scale=params).pdf(xs)
 
     if log_scale:
 
@@ -298,10 +294,10 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         computed_cdf_at_loc = null_cdf(location)
 
         ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
-
-        emp_cdf_at_provided_loc = np.searchsorted(sample, provided_loc, side='right') / n
-        computed_cdf_at_provided_loc = null_cdf(provided_loc)
-        ax1.vlines(provided_loc, emp_cdf_at_provided_loc, computed_cdf_at_provided_loc, linestyles='--', label=f'Deviation: {np.round(emp_cdf_at_provided_loc - computed_cdf_at_provided_loc, 6)}\nat x={np.round(provided_loc, 6)}', color='xkcd:shamrock green')
+        if provided_loc:
+            emp_cdf_at_provided_loc = np.searchsorted(sample, provided_loc, side='right') / n
+            computed_cdf_at_provided_loc = null_cdf(provided_loc)
+            ax1.vlines(provided_loc, emp_cdf_at_provided_loc, computed_cdf_at_provided_loc, linestyles='--', label=f'Deviation: {np.round(emp_cdf_at_provided_loc - computed_cdf_at_provided_loc, 6)}\nat x={np.round(provided_loc, 6)}', color='xkcd:shamrock green')
         if distro == 'gengamma':
             ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
             ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
