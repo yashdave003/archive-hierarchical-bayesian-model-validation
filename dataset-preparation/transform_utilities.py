@@ -24,9 +24,9 @@ def convert_to_wavelet_basis(folder_dir, color, basis="db1", normalized = False)
     c = color_dict[color]
 
     #Fill DF DICT
-    layer_arr = [0] * len(file_list) * (layer_len - 1) * 3 
-    orientation = [0] * len(file_list) * (layer_len - 1) * 3 
-    data_arr = [0] * len(file_list) * (layer_len - 1) * 3 
+    layer_arr = [0] * (len(file_list) * (layer_len - 1) * 3 + len(file_list))
+    orientation = [0] * (len(file_list) * (layer_len - 1) * 3 + len(file_list))
+    data_arr = [0] * (len(file_list) * (layer_len - 1) * 3 + + len(file_list))
     cnt = 0
     for k in range(len(file_list)):
         if c >= 3:
@@ -43,6 +43,12 @@ def convert_to_wavelet_basis(folder_dir, color, basis="db1", normalized = False)
     
         transformed = pywt.wavedec2(image, 'db1')
         direction_names = ['H', 'V', 'D']
+
+        arr = np.array(transformed[0][0])
+        layer_arr[cnt] = 1
+        orientation[cnt] =  "L1"
+        data_arr[cnt] = arr.flatten()
+        cnt += 1
 
         for i in range(1, layer_len): 
             for j in range(len(transformed[i])):
@@ -160,3 +166,17 @@ def getSplits(minfreq, maxfreq, mult):
         arr.append(next_freq)
         next_freq *= mult
     return arr
+
+
+def uniqueMags(folder_dir, start = None, end = None):
+    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir)]
+    image = np.array(Image.open(file_list[0]).convert('L'))
+    coord_df = getIndexDF(image, no_zero =False).sort_values(["magnitude"])
+    magnitudes = np.unique(coord_df["magnitude"])
+    if start != None:
+        start_idx = np.argmax(magnitudes >= start)
+        magnitudes = magnitudes[start_idx:]
+    if end != None:
+        end_idx = np.argmax(magnitudes > end)
+        magnitudes = magnitudes[:end_idx]
+    return magnitudes.tolist()
