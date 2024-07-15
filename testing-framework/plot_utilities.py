@@ -2,6 +2,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from utilities import *
 
+GROUP_NAME = 'Layer'
+
 def create_scatter_plot(df, metric=None, save_plot : bool = False):
     """
     Create a scatter plot, where the color of each point represents the value from the specified metric column.
@@ -170,7 +172,7 @@ def create_contour_plot(df, metric):
     
     plt.show()
 
-def visualize_cdf(sample, params, distro='gengamma', n_samples=10000, interval=None, provided_loc=None, all_cdfs=None, layer=None):
+def visualize_cdf(sample, params, distro='gengamma', n_samples=10000, interval=None, provided_loc=None, all_cdfs=None, group=None):
     """
     Visualize the gap between the empirical CDF and the computed CDF.
 
@@ -182,12 +184,12 @@ def visualize_cdf(sample, params, distro='gengamma', n_samples=10000, interval=N
         interval (tuple): Optional interval for the x-axis limits.
         provided_loc (float): Optional location to compute the deviation at.
         all_cdfs (dict): Dictionary containing computed CDFs.
-        layer (int or None): Layer index (for titling purposes).
+        group (int or None): Group index (for titling purposes).
 
     Returns:
         fig (matplotlib.figure.Figure): The figure object containing the plot.
     """
-    xs = np.linspace(np.min(sample), np.max(sample), 10000)
+    xs = np.linspace(max(np.min(sample), -5000), min(np.max(sample), 5000), 10000)
     sample = np.sort(sample)
     n = len(sample)
 
@@ -196,7 +198,7 @@ def visualize_cdf(sample, params, distro='gengamma', n_samples=10000, interval=N
         if all_cdfs and (r, eta) in all_cdfs:
             null_cdf = all_cdfs[(r, eta)]
         else:
-            null_cdf = compute_prior_cdf(r, eta)
+            null_cdf = compute_prior_cdf(r, eta, n_samples)
     elif distro == 'gaussian' or distro == 'normal':
         null_cdf = stats.norm(scale=params).cdf
     elif distro == 'laplace':
@@ -232,16 +234,16 @@ def visualize_cdf(sample, params, distro='gengamma', n_samples=10000, interval=N
 
     if distro == 'gengamma':
         r, eta = params
-        ax.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+        ax.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
     else:
-        ax.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n {distro} (0, {params})')
+        ax.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical CDF vs Computed CDF \n {distro} (0, {params})')
 
     ax.legend()
     plt.tight_layout()
 
     return fig
 
-def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_samples=10000, interval = None, provided_loc = None, all_cdfs=None, layer=None, bw = 0.05, bw_log = 0.05):
+def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_samples=10000, interval = None, provided_loc = None, all_cdfs=None, group=None, bw = 0.05, bw_log = 0.05):
     """
     Visualize the gap between the empirical CDF/PDF and the Computed CDF/PDF.
 
@@ -251,7 +253,7 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         eta (float): eta value.
         n_samples (int): Number of samples for the computed CDF/PDF.
         all_cdfs (dict): Dictionary containing computed CDFs.
-        layer (int or None): Layer index (for titling purposes).
+        group (int or None): Group index (for titling purposes).
 
     Returns:
         distance (float): The Kolmogorov-Smirnov statistic.
@@ -299,13 +301,13 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
             computed_cdf_at_provided_loc = null_cdf(provided_loc)
             ax1.vlines(provided_loc, emp_cdf_at_provided_loc, computed_cdf_at_provided_loc, linestyles='--', label=f'Deviation: {np.round(emp_cdf_at_provided_loc - computed_cdf_at_provided_loc, 6)}\nat x={np.round(provided_loc, 6)}', color='xkcd:shamrock green')
         if distro == 'gengamma':
-            ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
-            ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
-            ax3.set_title(f'{f"Layer {layer}" if layer else ""} Log Scale:\n Empirical PDF vs Computed PDF (r={r}, eta={eta})')
+            ax1.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+            ax2.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
+            ax3.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Log Scale:\n Empirical PDF vs Computed PDF (r={r}, eta={eta})')
         else:
-            ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n {distro} (0, {params})')
-            ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n {distro} (0, {params})')
-            ax3.set_title(f'{f"Layer {layer}" if layer else ""} Log Scale:\n Empirical PDF vs Computed PDF {distro} (0, {params})')
+            ax1.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical CDF vs Computed CDF \n {distro} (0, {params})')
+            ax2.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical PDF vs Computed PDF \n {distro} (0, {params})')
+            ax3.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Log Scale:\n Empirical PDF vs Computed PDF {distro} (0, {params})')
 
         # Empirical PDF vs Computed PDF
         ax2.set_xlim(left = -25, right = 25)
@@ -345,11 +347,11 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         computed_cdf_at_loc = null_cdf(location)
         ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
         if distro =='gengamma':
-            ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
-            ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
+            ax1.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
+            ax2.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
         else:
-            ax1.set_title(f'{f"Layer {layer}" if layer else ""} Empirical CDF vs Computed CDF \n {distro} (0, {params})')
-            ax2.set_title(f'{f"Layer {layer}" if layer else ""} Empirical PDF vs Computed PDF \n {distro} (0, {params})')
+            ax1.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical CDF vs Computed CDF \n {distro} (0, {params})')
+            ax2.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical PDF vs Computed PDF \n {distro} (0, {params})')
         ax1.legend()
 
         # Empirical PDF vs Computed PDF

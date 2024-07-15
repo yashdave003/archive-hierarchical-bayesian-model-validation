@@ -11,4 +11,4 @@ testing-framework/__pycache__/utilities.cpython-312.pyc
 transformed-data/
 *.DS_Store
 *obs_x_dict.pickle
-testing-framework/CDFs/.DS_Store
+*group_data_map.pickle

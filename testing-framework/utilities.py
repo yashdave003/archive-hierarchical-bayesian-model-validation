@@ -305,14 +305,14 @@ def gridsearch(sample, all_cdfs, top_k = 1, debug = False):
         if debug:
             print(f"Computing {i} of {num_cdfs}")
     
-    min_k = np.ones(top_k).astype(int)
+    min_k = 2*np.ones(top_k).astype(int)
     if debug:
         print(f"Finding Minimum after computing {num_cdfs} CDFs")
     if top_k > 1:
         ksstats_copy = ksstats.copy()
         for i in np.arange(top_k):
             min_k[i] = np.argmin(ksstats_copy)
-            ksstats_copy[min_k[i]] = 1
+            ksstats_copy[min_k[i]] = 2
         return ksstats, [cdf_keys[j] for j in min_k], ksstats[min_k]
     else:
         return ksstats, cdf_keys[np.argmin(ksstats)], np.min(ksstats) 
@@ -366,7 +366,7 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
             cnt += 1
             if debug:
                 print(f'{(r, eta)}, {cnt} of {n}')
-            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, support=False)
+            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int)
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
@@ -449,7 +449,7 @@ def find_n_fixed_pval_stat(ksstat: float, n: int, cutoff=0.05, cache = True):
         dump_dict_pkl(cache, 'pickles/find_n_cache.pickle')
     return n
 
-def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, completed_r_depth = 1, completed_eta_depth = 1):
+def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, completed_r_depth = 1, completed_eta_depth = 1, debug = True):
     '''
     Perform coordinate descent optimization to find the best parameters (r, eta) for a generalized gamma distribution
     that minimizes the Kolmogorov-Smirnov (KS) statistic for the given `sample`.
@@ -478,7 +478,8 @@ def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, com
     r_0, eta_0 = initial_param
 
     for d in np.arange(completed_r_depth, r_depth):
-            
+        if debug:
+            print(f"Optimizing r, current depth {d} of {r_depth}, r = {r_0}")
         r_range = np.arange(r_0 - 10.0**(-d), r_0 + 10.0**(-d), 10.0**(-d-1)) 
         eta_range = [eta_0]
         add_cdfs(r_range, eta_range, 10000, True, f'layer{layer}_')
@@ -487,7 +488,8 @@ def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, com
         r_0 = round_to_sigfigs(best_param[0], d+1)
 
     for d in np.arange(completed_eta_depth, eta_depth):
-            
+        if debug:
+            print(f"Optimizing eta, current depth {d} of {eta_depth}, eta = {eta_0}")
         r_range = [r_0]
         eta_range = np.arange(max(eta_0 - 10.0**(-d), 0), eta_0 + 10.0**(-d), 10.0**(-d-1)) 
         add_cdfs(r_range, eta_range, 10000, True, f'layer{layer}_')
