@@ -10,4 +10,4 @@ testing-framework/CDFs/optimize_cache.pickle
 testing-framework/__pycache__/utilities.cpython-312.pyc
 transformed-data/
 *.DS_Store
-testing-framework/full-pastis-grey-wavelet/obs_x_dict.pickle
+*obs_x_dict.pickle

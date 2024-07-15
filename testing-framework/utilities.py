@@ -290,7 +290,7 @@ def compute_ksratio(sample, cdf, sorted_sample = True, tail_cutoff = 0):
     return (round_to_sigfigs(np.min(tail_ratios)), round_to_sigfigs(np.max(tail_ratios)))
 
 
-def gridsearch(sample, all_cdfs, top_k = 1):
+def gridsearch(sample, all_cdfs, top_k = 1, debug = False):
     '''
     Takes in a sample and list of CDFs, 
     Returns the KS-Test Statistic computed with respect to each CDF, the top-k minimizing parameters and the corresponding distances
@@ -302,9 +302,12 @@ def gridsearch(sample, all_cdfs, top_k = 1):
     
     for i in range(num_cdfs):
         ksstats[i] = compute_ksstat(sample, cdf_splines[i])
+        if debug:
+            print(f"Computing {i} of {num_cdfs}")
     
     min_k = np.ones(top_k).astype(int)
-
+    if debug:
+        print(f"Finding Minimum after computing {num_cdfs} CDFs")
     if top_k > 1:
         ksstats_copy = ksstats.copy()
         for i in np.arange(top_k):
@@ -315,7 +318,7 @@ def gridsearch(sample, all_cdfs, top_k = 1):
         return ksstats, cdf_keys[np.argmin(ksstats)], np.min(ksstats) 
 
 
-def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
+def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debug = False):
     '''
     folder_name: Name of directory that contains pickles of dictionaries of cdfs
     r_range: range of r values, assumes use of np.arange
@@ -340,11 +343,13 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
             cdfs_completed.update(next_cdf.keys())
     else:
         Path(os.path.join(os.getcwd(), FOLDER_PATH)).mkdir()
-    print("CDFs completed:", len(cdfs_completed))
+    if debug:
+        print("CDFs completed:", len(cdfs_completed))
     n = len(r_range)*len(eta_range)
 
     if len(cdfs_completed) == n:
-        print("Already computed")
+        if debug:
+            print("Already computed")
         return
     
     cnt = 0
@@ -359,7 +364,8 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
             if ((r, eta) in cdfs_completed):
                 continue
             cnt += 1
-            print(f'{(r, eta)}, {cnt} of {n}')
+            if debug:
+                print(f'{(r, eta)}, {cnt} of {n}')
             r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, support=False)
 
         # Store pickle every outer loop iteration as its own file
@@ -376,7 +382,8 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
         pkl_path = os.path.join(FOLDER_PATH, f'{round_to_sigfigs(r_range[0], 6)}-{round_to_sigfigs(r_range[-1], 6)}_{min_eta}.pickle')
         dump_dict_pkl(grouped_r_cdf, pkl_path, overwrite=False)
 
-    # print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
+    if debug:
+        print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
 def load_pkl(path):
     if os.path.isfile(path):
@@ -386,18 +393,23 @@ def load_pkl(path):
     else:
         raise Exception("File does not exist, check the path again")
     
-def dump_dict_pkl(obj, path, overwrite = False):
+def dump_dict_pkl(obj, path, overwrite = False, debug=False):
     if overwrite:
+        if debug:
+            print("Overwriting existing file if it exists")
         with open(path, 'wb') as handle:
             pickle.dump(obj, handle)
+    elif os.path.isfile(path):
+        if debug:
+            print("Appending to Existing File")
+        with open(path, 'rb') as handle:
+            existing_object = pickle.load(handle)
+        obj = obj | existing_object
     else:
-        if os.path.isfile(path):
-            with open(path, 'rb') as handle:
-                existing_object = pickle.load(handle)
-            obj = obj | existing_object
-        else:
-            with open(path, 'wb') as handle:
-                pickle.dump(obj, handle)
+        if debug:
+            print("Writing to new file")
+        with open(path, 'wb') as handle:
+            pickle.dump(obj, handle)
 
 def find_n_fixed_pval_stat(ksstat: float, n: int, cutoff=0.05, cache = True):
     """
