@@ -90,7 +90,7 @@ def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent
     
     return xs, prior_pdf
 
-def pdf_to_cdf(xs, prior_pdf, enforce_assert=True, debug = False):
+def pdf_to_cdf(xs, prior_pdf, return_assert=False, enforce_assert=True, debug = False):
     """
     Converts a probability density function (PDF) to a cumulative distribution function (CDF).
 
@@ -117,6 +117,12 @@ def pdf_to_cdf(xs, prior_pdf, enforce_assert=True, debug = False):
     if debug:
         print("First CDF value:", first)
         print("Last CDF value:", normalizer)
+
+    if return_assert:
+        if not 0.05 > first > -0.05:
+            return None
+        if not 1.05 > normalizer > 0.95:
+            return None    
 
     if enforce_assert:
         assert 0.05 > first > -0.05    
@@ -148,7 +154,7 @@ def pdf_to_cdf(xs, prior_pdf, enforce_assert=True, debug = False):
     return cdf_spline
 
 
-def compute_prior_cdf(r, eta, n_samples=10000, tail_bound=0.05, tail_percent=0.01, scale=1, scipy_int=True, eng=None, enforce_assert=True, return_pdf=False, debug=False):
+def compute_prior_cdf(r, eta, n_samples=10000, tail_bound=0.05, tail_percent=0.01, scale=1, scipy_int=True, eng=None, enforce_assert=True, return_assert = False, return_pdf=False, debug=False):
     """
     Computes the prior cumulative density function (CDF) for given parameters r and eta. Optionally returns support, pdf, cdf (as a spline) in that order
 
@@ -179,8 +185,10 @@ def compute_prior_cdf(r, eta, n_samples=10000, tail_bound=0.05, tail_percent=0.0
     - cdf_spline (scipy.interpolate.CubicSpline): CubicSpline interpolation of the CDF
     """
 
-    xs, prior_pdf = compute_prior_pdf(r, eta, n_samples, tail_bound, tail_percent, scale, scipy_int, eng, debug)
-    cdf_spline = pdf_to_cdf(xs, prior_pdf, enforce_assert, debug)
+    xs, prior_pdf = compute_prior_pdf(r = r, eta = eta, n_samples = n_samples, 
+                                      tail_bound = tail_bound, tail_percent = tail_percent, 
+                                      scale = scale, scipy_int = scipy_int, eng = eng, debug = debug)
+    cdf_spline = pdf_to_cdf(xs = xs, prior_pdf = prior_pdf, enforce_assert = enforce_assert, return_assert = return_assert, debug = debug)
 
     if return_pdf:
         return xs, prior_pdf, cdf_spline
@@ -318,7 +326,7 @@ def gridsearch(sample, all_cdfs, top_k = 1, debug = False):
         return ksstats, cdf_keys[np.argmin(ksstats)], np.min(ksstats) 
 
 
-def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debug = False, eng=None):
+def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debug = False, eng=None, enforce_assert=True, return_assert = False):
     '''
     folder_name: Name of directory that contains pickles of dictionaries of cdfs
     r_range: range of r values, assumes use of np.arange
@@ -366,7 +374,13 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
             cnt += 1
             if debug:
                 print(f'{(r, eta)}, {cnt} of {n}')
-            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, eng=eng)
+            computed_cdf = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples, tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert)
+            if computed_cdf is None:
+                print(f"Failed assert for r={r}, eta={eta}")
+                with open("faultyCDFs.csv", 'a') as handle:
+                    handle.write(f"{r},{eta},{n_samples}\n")
+                continue
+            r_cdf[(r, eta)] = computed_cdf
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
