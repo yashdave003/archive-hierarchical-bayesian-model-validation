@@ -4,7 +4,7 @@ import os
 BRANDON = '/Users/brandonmarks/Desktop/Research Materials/hierarchical-bayesian-model-validation/'
 YASH = '/Users/yashd/Desktop/hierarchical-bayesian-model-validation/'
 
-ROOT_DIR = YASH
+ROOT_DIR = BRANDON
 os.chdir(ROOT_DIR + 'testing-framework/')
 
 from utilities import *
@@ -18,7 +18,7 @@ else:
     eng=None
 
 all_eta = np.arange(0.1, 4.1, 0.1) 
-all_r = np.arange(0.2, 1, 0.05)
+all_r = np.arange(1, 1.5, 0.05)
 num_points = 10000
 add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='mtlb_', debug=True, eng=eng)
 
