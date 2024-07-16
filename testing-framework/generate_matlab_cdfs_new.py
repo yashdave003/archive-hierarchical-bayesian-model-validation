@@ -4,7 +4,7 @@ import os
 BRANDON = '/Users/brandonmarks/Desktop/Research Materials/hierarchical-bayesian-model-validation/'
 YASH = '/Users/yashd/Desktop/hierarchical-bayesian-model-validation/'
 
-ROOT_DIR = YASH
+ROOT_DIR = BRANDON
 os.chdir(ROOT_DIR + 'testing-framework/')
 
 from utilities import *
