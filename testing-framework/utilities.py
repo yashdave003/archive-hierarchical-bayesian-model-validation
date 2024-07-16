@@ -318,7 +318,7 @@ def gridsearch(sample, all_cdfs, top_k = 1, debug = False):
         return ksstats, cdf_keys[np.argmin(ksstats)], np.min(ksstats) 
 
 
-def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debug = False):
+def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debug = False, eng=None):
     '''
     folder_name: Name of directory that contains pickles of dictionaries of cdfs
     r_range: range of r values, assumes use of np.arange
@@ -366,7 +366,7 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
             cnt += 1
             if debug:
                 print(f'{(r, eta)}, {cnt} of {n}')
-            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int)
+            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, eng=eng)
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
@@ -500,15 +500,12 @@ def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, com
     return (r_0, eta_0)
 
 def coord_descent_scipy(sample, initial_param):
-    '''
-    '''
     r_0, eta_0 = initial_param
     find_r_1 = scipy.optimize.minimize_scalar(generate_func(sample, 'gengamma_r', eta_0), method = 'bounded', bounds = (max(0.5, r_0-0.1), r_0+0.1))
     r_1 = find_r_1['x']
     find_eta_1 = scipy.optimize.minimize_scalar(generate_func(sample, 'gengamma_eta', r_1), method = 'bounded', bounds = (max(0, eta_0-0.1), eta_0+0.1))
     eta_1 = find_eta_1['x']
     find_r_2 = scipy.optimize.minimize_scalar(generate_func(sample, 'gengamma_r', eta_1), method = 'bounded', bounds = (max(0.5, r_1-0.1), r_1+0.1))
-
     r_2 = find_r_2['x']
 
     return (r_2, eta_1)

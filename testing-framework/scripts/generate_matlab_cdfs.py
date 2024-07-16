@@ -20,48 +20,61 @@ if USE_MATLAB:
 
 print("RUN FROM hierarchical-bayesian-model-validation/testing-framework directory")
 
-def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, support = False):
 
-    '''
-    Returns PPoly-type function that approximates the prior CDF of the signal x
-    r : shape parameter controlling rate of exponentional decay
-    eta : controls roundedness of peak, and hence sparsity
-    scale : scale parameter
-    n_samples : number of points used to numerically approximate CDF
-    tail_bound : Uses Chebyshev's Inequality to bound the region of the CDF that is outside the coverage of xs
-    n_tail : Sets the number of points tha lie outside the coverage of xs to approximate tails if need be
-
-    Usage:
-    new_cdf = compute_prior_cdf(r = 0.1, eta = 0.001)
-    new_cdf(0.5343) returns CDF
-    Can also accept arrays
-    '''
+def compute_prior_pdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, eng= None, debug=False):
     
+    """
+    Computes the prior probability density function (PDF) for given parameters r and eta.
+
+    Inputs:
+    - r (float): Shape parameter for the generalized gamma distribution, recommended r >= 0.4
+    - eta (float): Parameter related to the beta in the generalized gamma distribution, recommended eta >= 0
+    - n_samples (int, optional): Number of samples to generate. Default is 10000
+    - tail_bound (float, optional): Bound for the tail of the distribution. Default is 0.05
+    - tail_percent (float, optional): Percentage of samples to allocate to the tail. Default is 0.01
+    - scale (float, optional): Scale parameter for the distribution. Default is 1
+    - scipy_int (bool, optional): If True, uses SciPy for integration. If False, uses 'eng'. Default is True
+    - eng (object, optional): MATLAB engine for computation if scipy_int is False. Default is None
+    - debug (bool, optional): If True, prints debug information. Default is False
+
+    Outputs:
+    - xs (numpy.ndarray): Array of x values
+    - pdf (numpy.ndarray): Corresponding PDF values
+
+    Note: The function uses a combination of linear and logarithmic spacing for x values to capture both the central part and the tails of the distribution.
+    With 10000 samples and relatively large eta values, computed CDFs are reliable for r >= 0.4. For more robust CDFs, use MATLAB. 
+    Though the distribution is defined for some values of eta < 0, this function does not reliably compute CDFs in this region.
+
+    """
+
     beta = (eta + 1.5)/r 
-    var_prior = scale * scipy.special.gamma((eta + 1.5 + 2)/r)/scipy.special.gamma(beta)
-    cheby = np.sqrt(np.round(var_prior/(tail_bound)))
-    
-
+    var_prior = scale * scipy.special.gamma(beta + 1/r)/scipy.special.gamma(beta)
+    cheby = np.sqrt(var_prior/(tail_bound))
     n_tail = int(n_samples*tail_percent)
     
-    x_max = min(99, cheby) # introduced additional bound in case chebyshev is unwieldy
+    # introduced additional bound in case chebyshev is unwieldy
+    x_max = min(99, cheby) 
     if cheby < 120:
         n_tail = 0
-        print("No Tail")
-    
+        if debug:
+            print(f"No tail")
+    if debug:
+        print(f"Chebyshev bound: {cheby}")
 
     xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
     xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
     xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
+
     prior_pdf = np.full(xs.shape, np.nan)
 
     for j, x in enumerate(xs):
 
+        # Note that theta = variance, np.sqrt(theta) = SD
         def gauss_density(theta):
-            return (1./(np.sqrt(2*np.pi)*theta)) * np.exp(-0.5*(x/theta)**2)
+            return (1./(np.sqrt(2*np.pi)*np.sqrt(theta))) * np.exp(-0.5*(x**2/theta))
 
         def gen_gamma_density(theta):
-            return (r/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
+            return (np.abs(r)/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
 
         def integrand(theta):
             return gauss_density(theta) * gen_gamma_density(theta)
@@ -70,39 +83,106 @@ def compute_prior_cdf(r, eta, n_samples = 1000, tail_bound = 0.05, tail_percent 
             prior_pdf[j] = integrate.quad(integrand, 0, np.inf)[0]
         else:
             prior_pdf[j] = eng.compute_prior(float(r), float(eta), float(x), nargout=1)
+    
+    return xs, prior_pdf
+
+def pdf_to_cdf(xs, prior_pdf, enforce_assert=True, debug = False):
+    """
+    Converts a probability density function (PDF) to a cumulative distribution function (CDF).
+
+    Inputs:
+    - xs (numpy.ndarray): Array of x values
+    - prior_pdf (numpy.ndarray): Corresponding PDF values
+    - enforce_assert (bool, optional): If True, applies assertion checks. Default is True
+    - debug (bool, optional): If True, prints debug information. Default is False
+
+    Output:
+    - cdf_spline (scipy.interpolate.CubicSpline): CubicSpline interpolation of the CDF
+
+    Note: The function pads the CDF with zeros and ones at the extremes to ensure proper behavior at the tails.
+    """
 
     prior_cdf = np.zeros_like(prior_pdf)
     prior_cdf[0] = 0
     for i in range(1, len(xs)):
-        prior_cdf[i] = (interpolate.CubicSpline(x = xs[:i+1], y = prior_pdf[:i+1])).integrate(xs[0], xs[i])+0
+        prior_cdf[i] = (interpolate.CubicSpline(x=xs[:i+1], y=prior_pdf[:i+1])).integrate(xs[0], xs[i])+0
 
-        # Alternative with Simpson's: prior_cdf[i] = integrate.simps(prior_pdf[:i+1], xs[:i+1])
     normalizer = prior_cdf[-1]
     first = prior_cdf[1]
-    assert 1.05 > normalizer > 0.95
-    assert 0.05 > first > -0.05
+
+    if debug:
+        print("First CDF value:", first)
+        print("Last CDF value:", normalizer)
+
+    if enforce_assert:
+        assert 0.05 > first > -0.05    
+        assert 1.05 > normalizer > 0.95
+    
     prior_cdf = prior_cdf/normalizer   
 
-    k = int(0.01*n_samples)
+    k = int(0.01*len(xs))
     zero_padding = np.zeros(k)
     ones_padding = np.ones(k)
 
-    pad_max = max(10e5, np.round(cheby ** 2))
+    pad_max = max(10e5, np.round(max(np.abs(xs)) ** 2))
+    if debug:
+        print(f"0, 1 padding bounds: {pad_max}")
 
-    prior_cdf = np.append(zero_padding, prior_cdf)
-    xs_pad = np.append(np.linspace(-pad_max, xs[0] - 1e-5, k), xs)
+    prior_cdf_padded = np.concatenate([zero_padding, prior_cdf, ones_padding])
+    xs_padded = np.concatenate([
+        np.linspace(-pad_max, xs[0] - 1e-5, k),
+        xs,
+        np.linspace(xs[-1] + 1e-5, pad_max, k)
+    ])
 
-    prior_cdf = np.append(prior_cdf, ones_padding)
-    xs_pad = np.append(xs_pad, np.linspace(xs[-1] + 1e-5, pad_max, k))
+    cdf_spline = interpolate.CubicSpline(x=xs_padded, y=prior_cdf_padded)
 
-    poly = interpolate.CubicSpline(x = xs_pad, y = prior_cdf)
+    if enforce_assert:
+        assert np.isclose(cdf_spline(-1e10), 0, atol=1e-8)
+        assert np.isclose(cdf_spline(1e10), 1, atol=1e-8)
 
-    print(poly(-1e10), poly(1e10))
+    return cdf_spline
 
-    if support:
-        return xs, poly
+
+def compute_prior_cdf(r, eta, n_samples=10000, tail_bound=0.05, tail_percent=0.01, scale=1, scipy_int=True, eng=None, enforce_assert=True, return_pdf=False, debug=False):
+    """
+    Computes the prior cumulative density function (CDF) for given parameters r and eta. Optionally returns support, pdf, cdf (as a spline) in that order
+
+    Inputs:
+    - r (float): Shape parameter for the generalized gamma distribution, recommended r >= 0.4
+    - eta (float): Parameter related to the beta in the generalized gamma distribution, recommended eta >= 0
+    - n_samples (int, optional): Number of samples to generate. Default is 10000
+    - tail_bound (float, optional): Bound for the tail of the distribution. Default is 0.05
+    - tail_percent (float, optional): Percentage of samples to allocate to the tail. Default is 0.01
+    - scale (float, optional): Scale parameter for the distribution. Default is 1
+    - scipy_int (bool, optional): If True, uses SciPy for integration. If False, uses 'eng'. Default is True
+    - eng (object, optional): MATLAB engine for computation if scipy_int is False. Default is None
+    - enforce_assert (bool, optional): If True, applies assertion checks in pdf_to_cdf. Default is True
+    - return_pdf (bool, optional): If True, also returns the PDF. Default is False
+    - debug (bool, optional): If True, prints debug information. Default is False
+
+    Note: The function uses a combination of linear and logarithmic spacing for x values to capture both the central part and the tails of the distribution.
+    With 10000 samples and relatively large eta values, computed CDFs are reliable for r >= 0.4. For more robust CDFs, use MATLAB. 
+    Though the distribution is defined for some values of eta < 0, this function does not reliably compute CDFs in this region. 
+
+    Outputs:
+    If return_pdf is False:
+    - poly (scipy.interpolate.CubicSpline): CubicSpline interpolation of the CDF
+
+    If return_pdf is True:
+    - xs (numpy.ndarray): Array of x values
+    - prior_pdf (numpy.ndarray): Corresponding PDF values
+    - cdf_spline (scipy.interpolate.CubicSpline): CubicSpline interpolation of the CDF
+    """
+
+    xs, prior_pdf = compute_prior_pdf(r, eta, n_samples, tail_bound, tail_percent, scale, scipy_int, eng, debug)
+    cdf_spline = pdf_to_cdf(xs, prior_pdf, enforce_assert, debug)
+
+    if return_pdf:
+        return xs, prior_pdf, cdf_spline
     else:
-        return poly
+        return cdf_spline
+
 
 def round_to_sigfigs(x, num_sigfigs=2):
     if x == np.zeros_like(x):
@@ -131,9 +211,8 @@ def dump_dict_pkl(obj, path, overwrite = False):
     else:
         with open(path, 'wb') as handle:
             pickle.dump(obj, handle)
-        
 
-def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
+def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debug = False, eng=None):
     '''
     folder_name: Name of directory that contains pickles of dictionaries of cdfs
     r_range: range of r values, assumes use of np.arange
@@ -158,11 +237,13 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
             cdfs_completed.update(next_cdf.keys())
     else:
         Path(os.path.join(os.getcwd(), FOLDER_PATH)).mkdir()
-    print("CDFs completed:", len(cdfs_completed))
+    if debug:
+        print("CDFs completed:", len(cdfs_completed))
     n = len(r_range)*len(eta_range)
 
     if len(cdfs_completed) == n:
-        print("Already computed")
+        if debug:
+            print("Already computed")
         return
     
     cnt = 0
@@ -177,8 +258,9 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
             if ((r, eta) in cdfs_completed):
                 continue
             cnt += 1
-            print(f'{(r, eta)}, {cnt} of {n}')
-            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, support=False)
+            if debug:
+                print(f'{(r, eta)}, {cnt} of {n}')
+            r_cdf[(r, eta)] = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples,  tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, eng=eng)
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
@@ -194,59 +276,15 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name=''):
         pkl_path = os.path.join(FOLDER_PATH, f'{round_to_sigfigs(r_range[0], 6)}-{round_to_sigfigs(r_range[-1], 6)}_{min_eta}.pickle')
         dump_dict_pkl(grouped_r_cdf, pkl_path, overwrite=False)
 
-    print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
+    if debug:
+        print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
   
 os.chdir(os.path.join(os.getcwd(), "testing-framework"))
 
-all_eta = np.arange(0.1, 4, 0.2) #, np.array([np.float_power(10, i) for i in range(-9, -1)]))
-# all_eta =  np.append(np.arange(0, 4, 0.2), np.array([np.float_power(10, i) for i in range(-3, -1)]))
-all_r = np.arange(0.7, 2, 0.1)
+all_eta = np.arange(0.1, 4.1, 0.1) 
+all_r = np.arange(0.2, 1, 0.05)
 num_points = 10000
-add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='scipy_')
-
-############################################################
-
-# LAYER 2
-# all_r = np.arange(0.6020, 0.6030, 0.0001)
-# all_eta = np.arange(3.20, 3.21, 0.01)
-# num_points = 10000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer2_')
-
-# LAYER 3
-# all_r = np.arange(0.7040, 0.7060, 0.0001)
-# all_eta = np.array([3.63]) #np.arange(3.63, 3.64, 0.01)
-# num_points = 10000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer3_')
-
-# # # LAYER 4
-# all_r = np.arange(0.790, 0.810, 0.001)
-# all_eta = [3] # np.arange(2.9, 3.1, 0.01)
-# num_points = 10000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer4_')
-
-# LAYER 5
-# all_r = np.arange(0.90390, 0.90410, 0.00001)
-# all_eta =  [1.62] #np.arange(1.55, 1.65, 0.01)
-# num_points = 10000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer5_')
-
-# # LAYER 6
-# all_r = np.arange(1.020, 1.040, 0.001)
-# all_eta = [0.33] # np.arange(0.33, 0.34, 0.01)
-# num_points = 10000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer6_')
-
-# # LAYER 7
-# all_r = np.arange(4.6280, 4.630, 0.0001)
-# all_eta = [0] # np.append(np.logspace(-6, -1, 1, base = 10), np.arange(0, 4, 0.1))
-# num_points = 10000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer7_')
-
-# # LAYER 8
-# all_r = np.arange(5.690, 5.710, 0.001)
-# all_eta = [0] # np.append(np.logspace(-6, -1, 1, base = 10), np.arange(0, 4, 0.1))
-# num_points = 10000
-# add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='layer8_')
+add_cdfs(r_range = all_r, eta_range = all_eta, n_samples = num_points, scipy_int=(not USE_MATLAB), folder_name='mtlb_', debug=True)
 
 if USE_MATLAB:
     eng.quit()
