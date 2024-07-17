@@ -23,7 +23,7 @@ else:
 
 # Brandon TO DO with matlab
 all_eta = np.arange(0, 4.1, 0.1) 
-all_r = np.arange(0.2, 1.5, 0.01)
+all_r = np.arange(0.99, 1.5, 0.01)
 
 # # Yash wants to do with scipy
 # all_eta = np.arange(0, 4.1, 0.1) 
