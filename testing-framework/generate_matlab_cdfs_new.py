@@ -4,7 +4,7 @@ import os
 BRANDON = '/Users/brandonmarks/Desktop/Research Materials/hierarchical-bayesian-model-validation/'
 YASH = '/Users/yashd/Desktop/hierarchical-bayesian-model-validation/'
 
-ROOT_DIR = BRANDON
+ROOT_DIR = Brandon
 os.chdir(ROOT_DIR + 'testing-framework/')
 
 from utilities import *
@@ -17,22 +17,19 @@ if USE_MATLAB:
 else:
     eng=None
 
-# # Yash has DONE with scipy
-# all_eta = np.arange(0, 4.1, 0.1) 
-# all_r = np.arange(1.5, 8, 0.1)
+# Yash is trying to do with MATLAB, n_samples=100000
+# all_eta = np.arange(0, 4.1, 0.2) 
+# all_r = np.arange(0.19, 0.1, -0.01)
 
-# Brandon TO DO with matlab
-all_eta = np.arange(0, 4.1, 0.1) 
-all_r = np.arange(0.2, 1.5, 0.01)
+# Brandon to do with MATLAB
+all_eta = np.arange(0.1, 4.1, 0) 
+all_r = np.arange(0.2, 0.1, -0.01)
 
-# # Yash wants to do with scipy
-# all_eta = np.arange(0, 4.1, 0.1) 
-# all_r = np.arange(1.5, 3, 0.01)
-
-num_points = 10000
+num_points = 100000
+# Note that I've changed add_cdfs so that n_samples is not automatically appended at the end inside the function
 add_cdfs(r_range = all_r, eta_range = all_eta, 
          n_samples = num_points, scipy_int=(not USE_MATLAB), 
-         folder_name='mtlb_', debug=True, eng=eng,
+         folder_name=f'mtlb_{num_points}', debug=True, eng=eng,
          return_assert=True, enforce_assert=False)
 
 if USE_MATLAB:

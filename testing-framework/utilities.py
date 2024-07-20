@@ -339,9 +339,9 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
         raise Exception("This Directory Does Not Contain CDFs")
     
     if folder_name == '':
-        folder_name = f'{min(r_range)}-{max(r_range)}{min(eta_range)}-{max(eta_range)}_'
+        folder_name = f'{min(r_range)}-{max(r_range)}{min(eta_range)}-{max(eta_range)}_{n_samples}'
 
-    FOLDER_PATH = os.path.join("CDFs", folder_name+str(n_samples))
+    FOLDER_PATH = os.path.join("CDFs", folder_name)
     cdfs_completed = set()
     if os.path.isdir(FOLDER_PATH):
         print(FOLDER_PATH)    
@@ -376,10 +376,15 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
                 print(f'{(r, eta)}, {cnt} of {n}')
             computed_cdf = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples, tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert)
             if computed_cdf is None:
-                print(f"Failed assert for r={r}, eta={eta}")
-                with open("faultyCDFs.csv", 'a') as handle:
+                
+                with open("faultyCDFs_brandon.csv", 'a') as handle:
                     handle.write(f"{r},{eta},{n_samples}\n")
-                continue
+                with open("faultyCDF_log.txt", 'a') as handle:
+                    handle.write(f"Failed assert for r={r}, eta={eta}, n_samples={n_samples}")
+                    handle.write(f"Skipping {eta} (exclusive) to {max(eta_range)} for r={r}")
+                print(f"Failed assert for r={r}, eta={eta}, n_samples={n_samples}")
+                print(f"Skipping {eta} (exclusive) to {max(eta_range)} for r={r}")
+                break
             r_cdf[(r, eta)] = computed_cdf
 
         # Store pickle every outer loop iteration as its own file
@@ -463,7 +468,7 @@ def find_n_fixed_pval_stat(ksstat: float, n: int, cutoff=0.05, cache = True):
         dump_dict_pkl(cache, 'pickles/find_n_cache.pickle')
     return n
 
-def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, completed_r_depth = 1, completed_eta_depth = 1, debug = True):
+def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, group, completed_r_depth = 1, completed_eta_depth = 1, debug = True, DATA_NAME = None, eng=None, scipy_int = True):
     '''
     Perform coordinate descent optimization to find the best parameters (r, eta) for a generalized gamma distribution
     that minimizes the Kolmogorov-Smirnov (KS) statistic for the given `sample`.
@@ -473,7 +478,7 @@ def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, com
        initial_param (tuple): The initial guess for the parameters (r, eta).
        r_depth (int): The number of decimal places to search for the optimal value of 'r'.
        eta_depth (int): The number of decimal places to search for the optimal value of 'eta'.
-       layer (int): The layer index for naming the intermediate pickles.
+       group (int): The layer index for naming the intermediate pickles.
        completed_r_depth (int, optional): The number of decimal places already completed for 'r'. Defaults to 1.
        completed_eta_depth (int, optional): The number of decimal places already completed for 'eta'. Defaults to 1.
        
@@ -490,14 +495,15 @@ def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, com
     returns 0.803, 3.01
     '''
     r_0, eta_0 = initial_param
+    n_samples = 10000
 
     for d in np.arange(completed_r_depth, r_depth):
         if debug:
             print(f"Optimizing r, current depth {d} of {r_depth}, r = {r_0}")
         r_range = np.arange(r_0 - 10.0**(-d), r_0 + 10.0**(-d), 10.0**(-d-1)) 
         eta_range = [eta_0]
-        add_cdfs(r_range, eta_range, 10000, True, f'layer{layer}_')
-        layer_cdfs = combine_pickles(f'layer{layer}_10000')
+        add_cdfs(r_range=r_range, eta_range=eta_range, n_samples=n_samples, folder_name=f'{DATA_NAME}_group{group}_{n_samples}', eng=eng, scipy_int=scipy_int)
+        layer_cdfs = combine_pickles(f'{DATA_NAME}_group{group}_{n_samples}')
         ksstats, best_param, min_stat = gridsearch(sample, layer_cdfs)
         r_0 = round_to_sigfigs(best_param[0], d+1)
 
@@ -506,8 +512,8 @@ def coord_descent_gengamma(sample, initial_param, r_depth, eta_depth, layer, com
             print(f"Optimizing eta, current depth {d} of {eta_depth}, eta = {eta_0}")
         r_range = [r_0]
         eta_range = np.arange(max(eta_0 - 10.0**(-d), 0), eta_0 + 10.0**(-d), 10.0**(-d-1)) 
-        add_cdfs(r_range, eta_range, 10000, True, f'layer{layer}_')
-        layer_cdfs = combine_pickles(f'layer{layer}_10000')
+        add_cdfs(r_range=r_range,eta_range=eta_range, n_samples=n_samples, folder_name=f'{DATA_NAME}_group{group}_{n_samples}', eng=eng, scipy_int=scipy_int)
+        layer_cdfs = combine_pickles(f'{DATA_NAME}_group{group}_{n_samples}')
         ksstats, best_param, min_stat = gridsearch(sample, layer_cdfs)
         eta_0 = round_to_sigfigs(best_param[1], d+1)
 

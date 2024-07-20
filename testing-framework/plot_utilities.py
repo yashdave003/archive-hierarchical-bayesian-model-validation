@@ -268,7 +268,7 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         if all_cdfs and (r, eta) in all_cdfs:
             null_cdf = all_cdfs[(r, eta)]
         else:
-            null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples)
+            null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples, enforce_assert=False, debug=True)
         xs_pdf, computed_pdf = compute_prior_pdf(r, eta, tail_bound=0.01)
     elif distro == 'gaussian' or distro == 'normal':
         null_cdf = stats.norm(scale=params).cdf
