@@ -11,7 +11,7 @@ After you've installed quarto, go into your terminal on your *local* device and 
 
 ### Environment Setup
 
-This section will ensure that you have all the necessary packages. We recommend using Conda ([download here](https://www.anaconda.com/download)) to keep track of your environment. 
+This section will ensure that you have all the necessary packages. We recommend using Conda ([download here](https://www.anaconda.com/download)) to keep track of your environment. Recommended Python 3.11 if using Matlab R2024a, and Python 3.10 if using Matlab R2023a. 
 
 Run the following in your terminal within the main directory: 
 
