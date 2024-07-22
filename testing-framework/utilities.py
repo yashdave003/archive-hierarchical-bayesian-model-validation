@@ -391,7 +391,7 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
-        min_eta, max_eta = round_to_sigfigs(eta_range[0], 6), min(0, min(round_to_sigfigs(eta_range[-1], 6), cut_max_eta))
+        min_eta, max_eta = round_to_sigfigs(eta_range[0], 6), min(round_to_sigfigs(eta_range[-1], 6), cut_max_eta)
         
         if len(eta_range) > 1:
             pkl_path = os.path.join(FOLDER_PATH,f'{r}_{min_eta}-{max_eta}.pickle')
