@@ -376,7 +376,6 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
                 print(f'{(r, eta)}, {cnt} of {n}')
             computed_cdf = compute_prior_cdf(r = r, eta = eta, n_samples = n_samples, tail_percent = 0.01, tail_bound = 0.01, scipy_int=scipy_int, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert)
             if computed_cdf is None:
-                
                 with open("faultyCDFs_brandon.csv", 'a') as handle:
                     handle.write(f"{r},{eta},{n_samples}\n")
                 with open("faultyCDF_log.txt", 'a') as handle:
@@ -384,6 +383,7 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
                     handle.write(f"Skipping {eta} (exclusive) to {max(eta_range)} for r={r}")
                 print(f"Failed assert for r={r}, eta={eta}, n_samples={n_samples}")
                 print(f"Skipping {eta} (exclusive) to {max(eta_range)} for r={r}")
+                r_cdf[(r, eta)] = computed_cdf
                 break
             r_cdf[(r, eta)] = computed_cdf
 
