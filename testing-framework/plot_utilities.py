@@ -361,3 +361,33 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         ax2.legend()
     
     return fig
+
+
+
+def twoSampleComparisonPlots(samp1, samp2, bw =0.2, samp1name = "Sample 1", samp2name = "Sample 2"):
+    n_1 = len(samp1)
+    n_2 = len(samp2)
+    ksres = stats.ks_2samp(samp1, samp2)
+    ks_loc, ks_stat = ksres.statistic_location, ksres.statistic
+    fig, axes = plt.subplots(1, 3, figsize=(24, 6))
+    #axes[0].set_xlim(left = -.25*bound, right = .25*bound)
+    #axes[1].set_xlim(left = -.25*bound, right = .25*bound)
+    axes[1].set_ylim(bottom = 10**-6, top= 10)
+    #axes[2].set_xlim(left = -.25*bound, right = .25*bound)
+    sns.kdeplot(ax = axes[0], x = samp1, bw_method=bw, label = samp1name)
+    sns.kdeplot(ax = axes[0], x = samp2,bw_method = bw, label = samp2name)
+    sns.kdeplot(ax = axes[1], x = samp1, bw_method = bw, log_scale=[False, True], label = samp1name)
+    sns.kdeplot(ax = axes[1], x = samp2, bw_method = bw, log_scale=[False, True], label = samp2name)
+    axes[2].plot(np.sort(samp1), np.arange(1, n_1+1)/n_1, label=samp1name)
+    axes[2].plot(np.sort(samp2), np.arange(1, n_2+1)/n_2, label=samp2name)
+    emp_cdf_at_loc = np.searchsorted(np.sort(samp1), ks_loc, side='right') / n_1
+    emp_cdf_at_loc2 = np.searchsorted(np.sort(samp2), ks_loc, side='right') / n_2
+    axes[2].vlines(ks_loc, emp_cdf_at_loc, emp_cdf_at_loc2, linestyles='--', label=f'Maximum Deviation: {np.round(ks_stat, 6)}\nat x={np.round(ks_loc, 6)}', color='xkcd:bright red')
+    
+    axes[0].set_title("Non Log Scale Pdf")
+    axes[1].set_title("Log Scale Pdf")
+    axes[2].set_title(f"CDF with p-value:{np.round(ksres.pvalue, 8)}")
+    axes[0].legend()
+    axes[1].legend()
+    axes[2].legend()
+    return fig

@@ -14,7 +14,7 @@ import pickle
 import nibabel as nib
 
 def convert_to_wavelet_basis(folder_dir, color, basis="db1", normalized = False):
-    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir)]
+    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     #Setup df Dict
     image = Image.open(file_list[0]).convert('L')
     first_image = pywt.wavedec2(image, basis)
@@ -88,7 +88,7 @@ def getIndexDF(image, no_zero =False):
     return coord_df
 
 def convert_fourier_list(folder_dir, c):
-    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir)]
+    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     image = np.array(Image.open(file_list[0]).convert('L'))
     coord_df = getIndexDF(image, no_zero =False).sort_values(["magnitude"])
     x = coord_df["x_index"].to_numpy()
@@ -186,7 +186,7 @@ def getIndexDF_3d(image, no_zero =False):
     return coord_df
 
 def convert_fourier_list_3d(folder_dir, ):
-    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir)]
+    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     image = nib.load(file_list[0]).get_fdata()
     coord_df = getIndexDF_3d(image, no_zero =False).sort_values(["magnitude"])
     x = coord_df["x_index"].to_numpy()
@@ -229,7 +229,7 @@ def convert_to_fourier_basis_3d(folder_dir, threshold =0.05, max_depth = 5, pres
 
 
 def uniqueMags(folder_dir, start = None, end = None, dim="2d"):
-    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir)]
+    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     image = np.array(Image.open(file_list[0]).convert('L'))
     if dim == "2d":
         coord_df = getIndexDF(image, no_zero =False).sort_values(["magnitude"])
@@ -248,7 +248,7 @@ def uniqueMags(folder_dir, start = None, end = None, dim="2d"):
 
 
 def convert_to_wavelet_basis_3d(folder_dir, basis="db1", normalized = False):
-    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir)]
+    file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     #Setup df Dict
     image = nib.load(file_list[0]).get_fdata()
     first_image = pywt.wavedecn(image, basis)
