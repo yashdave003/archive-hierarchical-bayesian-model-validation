@@ -363,7 +363,7 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
     cnt = 0
     grouped_r_cdf = dict()
     flag = False
-
+    cut_max_eta = float('inf')
     for r in r_range:
         r_cdf = dict()
         r = round_to_sigfigs(r, 6)
@@ -384,12 +384,14 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
                 print(f"Failed assert for r={r}, eta={eta}, n_samples={n_samples}")
                 print(f"Skipping {eta} (exclusive) to {max(eta_range)} for r={r}")
                 r_cdf[(r, eta)] = computed_cdf
+                cut_max_eta = eta
                 break
-            r_cdf[(r, eta)] = computed_cdf
+            if r_cdf:
+                r_cdf[(r, eta)] = computed_cdf
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
-        min_eta, max_eta = round_to_sigfigs(eta_range[0], 6), round_to_sigfigs(eta_range[-1], 6)
+        min_eta, max_eta = round_to_sigfigs(eta_range[0], 6), min(0, min(round_to_sigfigs(eta_range[-1], 6), cut_max_eta))
         
         if len(eta_range) > 1:
             pkl_path = os.path.join(FOLDER_PATH,f'{r}_{min_eta}-{max_eta}.pickle')
