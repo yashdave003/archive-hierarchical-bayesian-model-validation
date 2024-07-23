@@ -229,7 +229,7 @@ def visualize_cdf(sample, params, distro='gengamma', n_samples=10000, interval=N
         emp_cdf_at_provided_loc = np.searchsorted(sample, provided_loc, side='right') / n
         computed_cdf_at_provided_loc = null_cdf(provided_loc)
         ax.vlines(provided_loc, emp_cdf_at_provided_loc, computed_cdf_at_provided_loc, linestyles='--',
-                  label=f'Deviation: {np.round(emp_cdf_at_provided_loc - computed_cdf_at_provided_loc, 6)}\nat x={np.round(provided_loc, 6)}',
+                  label=f'Deviation: {np.round(np.abs(emp_cdf_at_provided_loc - computed_cdf_at_provided_loc), 6)}\nat x={np.round(provided_loc, 6)}',
                   color='xkcd:shamrock green')
 
     if distro == 'gengamma':
@@ -259,7 +259,7 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         distance (float): The Kolmogorov-Smirnov statistic.
         location (float): The location of the maximum deviation between the empirical and computed CDFs.
     """
-    xs = np.linspace(np.min(sample), np.max(sample), 10000)
+    xs = np.linspace(max(-10000, np.min(sample)), min(np.max(sample), 10000), 20000)
     sample = np.sort(sample)
     n = len(sample)
     
@@ -267,9 +267,10 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         r, eta = params
         if all_cdfs and (r, eta) in all_cdfs:
             null_cdf = all_cdfs[(r, eta)]
+            xs_pdf, computed_pdf = compute_prior_pdf(r, eta, tail_bound=0.01)
         else:
-            null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples, enforce_assert=False, debug=True)
-        xs_pdf, computed_pdf = compute_prior_pdf(r, eta, tail_bound=0.01)
+            xs_pdf, computed_pdf, null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples, enforce_assert=False, debug=True, return_pdf=True)
+        
     elif distro == 'gaussian' or distro == 'normal':
         null_cdf = stats.norm(scale=params).cdf
         xs_pdf = np.linspace(-30, 30, 10000)

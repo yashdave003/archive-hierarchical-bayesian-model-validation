@@ -381,8 +381,8 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
                 with open("faultyCDF_log.txt", 'a') as handle:
                     handle.write(f"Failed assert for r={r}, eta={eta}, n_samples={n_samples}")
                     handle.write(f"Skipping {eta} (exclusive) to {max(eta_range)} for r={r}")
-                print(f"Failed assert for r={r}, eta={eta}, n_samples={n_samples}")
-                print(f"Skipping {eta} (exclusive) to {max(eta_range)} for r={r}")
+                print(f"Failed assert for r={r}, eta={eta}, n_samples={n_samples}\n")
+                print(f"Skipping {eta} (exclusive) to {max(eta_range)} for r={r}\n")
                 r_cdf[(r, eta)] = computed_cdf
                 cut_max_eta = eta
                 break
@@ -575,3 +575,8 @@ def generate_func(sample, distro, *args):
             return compute_ksstat(sample, cdf)
         return eta_func
     print("Please enter a valid argument for `distro` : 'gaussian', 'laplace', 'gengamma_r', 'gengamma_eta', 't'")
+
+def var_prior(r, eta, scale=1):
+    beta = (eta+1.5)/r
+    var_prior = scale * scipy.special.gamma(beta + 1/r)/scipy.special.gamma(beta)
+    return var_prior
