@@ -13,7 +13,7 @@ import os
 import pickle
 import nibabel as nib
 
-def convert_to_wavelet_basis(folder_dir, color, basis="db1", normalized = False):
+def convert_to_wavelet_basis(folder_dir, color, basis="db1", image_func = None):
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     #Setup df Dict
     image = Image.open(file_list[0]).convert('L')
@@ -36,10 +36,8 @@ def convert_to_wavelet_basis(folder_dir, color, basis="db1", normalized = False)
         else:
             image = np.array(Image.open(file_list[k]))[:,:,c]
 
-        if normalized:
-            std= np.std(image)
-            mean = np.mean(image)
-            image = (image- mean)/std
+        if image_func != None:
+            image = image_func(image)
 
     
         transformed = pywt.wavedec2(image, 'db1')
@@ -247,7 +245,7 @@ def uniqueMags(folder_dir, start = None, end = None, dim="2d"):
 
 
 
-def convert_to_wavelet_basis_3d(folder_dir, basis="db1", normalized = False):
+def convert_to_wavelet_basis_3d(folder_dir, basis="db1", image_func = None):
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     #Setup df Dict
     image = nib.load(file_list[0]).get_fdata()
@@ -267,10 +265,8 @@ def convert_to_wavelet_basis_3d(folder_dir, basis="db1", normalized = False):
 
         image = np.array(nib.load(file_list[k]).get_fdata())
 
-        if normalized:
-            std= np.std(image)
-            mean = np.mean(image)
-            image = (image- mean)/std
+        if image_func != None:
+            image = image_func(image)
 
     
         transformed = pywt.wavedecn(image, 'db1')
