@@ -389,5 +389,5 @@ def twoSampleComparisonPlots(samp1, samp2, bw =0.2, samp1name = "Sample 1", samp
     axes[2].set_title(f"CDF with p-value:{np.round(ksres.pvalue, 8)}")
     axes[0].legend()
     axes[1].legend()
-    axes[2].legend()
+    axes[2].legend()                                                                
     return fig
