@@ -12,6 +12,7 @@ import seaborn as sns
 import os
 import pickle
 import nibabel as nib
+from scipy import ndimage
 
 def convert_to_wavelet_basis(folder_dir, color, basis="db1", image_func = None):
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
@@ -149,7 +150,10 @@ def convert_to_fourier_basis(folder_dir, color, threshold =0.05, max_depth = 5, 
         next_idx = np.argmax(mags>=sorted_mag_split[i])
         next_freqs = np.concatenate([np.real(freqs[prev:next_idx]),np.imag(freqs[prev:next_idx])])
         num_mags = len(np.unique(mags[prev:next_idx]))
-        mag_endpoints = (min(mags[prev:next_idx]), max(mags[prev:next_idx]))
+        if len(mags[prev:next_idx]) != 0:
+            mag_endpoints = (min(mags[prev:next_idx]), max(mags[prev:next_idx]))
+        else:
+            mag_endpoints = (None, None)
 
         df.loc[len(df.index)] = [i+1, color, mag_endpoints, num_mags, next_freqs]
         prev = next_idx
