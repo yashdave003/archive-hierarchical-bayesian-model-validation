@@ -17,16 +17,24 @@ if USE_MATLAB:
 else:
     eng=None
 
-# Yash is trying to do with MATLAB, n_samples=100000
-# all_eta = np.arange(0, 4.1, 0.2) 
-# all_r = np.arange(0.19, 0.1, -0.01)
+# Part 1: 0.14-0.17, num_points = 120000 (and increments of 20000 if need be); folder_name=f'mtlb_014to017_r' (Brandon)
+all_eta = np.arange(0.1, 4.1, 0.2) 
+all_r = np.arange(0.2, 0.13, -0.01)
 
-# Brandon to do with MATLAB
-all_eta = np.arange(0.1, 4.1, 0) 
-all_r = np.arange(0.2, 0.1, -0.01)
+# Part 2, 0.14-0.17, num_points = 120000 (and increments of 20000 if need be); folder_name=f'mtlb_014to017_r' (Brandon)
+all_eta = np.arange(0, 4.1, 0.2) 
+all_r = np.arange(0.2, 0.13, -0.01)
 
-num_points = 100000
-# Note that I've changed add_cdfs so that n_samples is not automatically appended at the end inside the function
+# Part 3: Expanding eta to include a broader space, num_points = 10000; folder_name=f'mtlb_4to8_eta' (Yash)
+all_eta = np.arange(4, 8.1, 1) 
+all_r = np.append(np.arange(0.2, 4, 0.1), np.arange(4, 8, 1))
+
+# Part 4: Expanding eta to include a broader space, num_points = 10000; folder_name=f'mtlb_8to20_eta' (Yash)
+all_eta = np.arange(8, 20.1, 2) 
+all_r = np.append(np.arange(0.2, 4, 0.1), np.arange(4, 8, 1))
+
+num_points = 120000
+# remember to change folder_name and num_points before running)
 add_cdfs(r_range = all_r, eta_range = all_eta, 
          n_samples = num_points, scipy_int=(not USE_MATLAB), 
          folder_name=f'mtlb_{num_points}', debug=True, eng=eng,
