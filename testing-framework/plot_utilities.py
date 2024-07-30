@@ -392,3 +392,25 @@ def twoSampleComparisonPlots(samp1, samp2, bw =0.2, samp1name = "Sample 1", samp
     axes[1].legend()
     axes[2].legend()                                                                
     return fig
+
+
+def multiSampleComparisonPlots(samps,  samp_names, bw =0.2):
+    fig, axes = plt.subplots(1, 3, figsize=(24, 6))
+    for i in range(len(samps)):
+        n_1 = len(samps[i])
+        #axes[0].set_xlim(left = -.25*bound, right = .25*bound)
+        #axes[1].set_xlim(left = -.25*bound, right = .25*bound)
+        axes[1].set_ylim(bottom = 10**-6, top= 10)
+        #axes[2].set_xlim(left = -.25*bound, right = .25*bound)
+        sns.kdeplot(ax = axes[0], x = samps[i], bw_method=bw, label = samp_names[i])
+        sns.kdeplot(ax = axes[1], x = samps[i], bw_method = bw, log_scale=[False, True], label = samp_names[i])
+        axes[2].plot(np.sort(samps[i]), np.arange(1, n_1+1)/n_1, label=samp_names[i])
+
+        
+        axes[0].set_title("Non Log Scale Pdf")
+        axes[1].set_title("Log Scale Pdf")
+        axes[2].set_title(f"CDF")
+        axes[0].legend()
+        axes[1].legend()
+        axes[2].legend()                                                                
+    return fig
