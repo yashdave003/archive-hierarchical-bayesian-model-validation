@@ -24,7 +24,7 @@ def convert_to_wavelet_basis(folder_dir, color, basis="db1", image_func = None, 
     first_image = pywt.wavedec2(image, basis)
     layer_len = len(first_image)
     print(str(layer_len) + " layers being used")
-    
+    sleep(0.3)
     color_dict = {"Red":0, "Green":1, "Blue":2, "Gray":3, "Infrared": 4}
     c = color_dict[color]
 
@@ -157,6 +157,7 @@ def convert_to_fourier_basis(folder_dir, color, threshold =0.05, max_depth = 5, 
     
     sorted_mag_split = np.sort(mag_splits)
     print(sorted_mag_split)
+    sleep(0.3)
     prev = 0
     if debug:
         loop = tqdm(range(len(mag_splits)))
@@ -241,6 +242,7 @@ def convert_to_fourier_basis_3d(folder_dir, threshold =0.05, max_depth = 5, pres
     
     sorted_mag_split = np.sort(mag_splits)
     print(sorted_mag_split)
+    sleep(0.3)
     prev = 0
     if debug:
         loop = tqdm(range(len(mag_splits)))
@@ -294,7 +296,7 @@ def convert_to_wavelet_basis_3d(folder_dir, basis="db1", image_func = None, debu
     direction_names = first_image[1].keys()
     direction_num = len(direction_names)
     print(str(layer_len) + " layers being used")
-    
+    sleep(0.3)
 
     #Fill DF DICT
     layer_arr = [0] * (len(file_list) * (layer_len - 1) * direction_num + len(file_list))
@@ -341,7 +343,7 @@ def convert_to_wavelet_basis_3d(folder_dir, basis="db1", image_func = None, debu
     
     return new_df
 
-def fourier_full_decomp(folder_dir, color, coord_df= None):
+def fourier_full_decomp(folder_dir, color, coord_df= None, debug = False):
     color_dict = {"Red":0, "Green":1, "Blue":2, "Gray":3, "Infrared": 4}
     c = color_dict[color]
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
@@ -354,7 +356,11 @@ def fourier_full_decomp(folder_dir, color, coord_df= None):
     x = coord_df["x_index"].to_numpy()
     y = coord_df["y_index"].to_numpy()
     freq_arr = [0]*len(file_list)
-    for k in range(len(file_list)):
+    if debug:
+        loop = tqdm(range(len(file_list)))
+    else:
+        loop = range(len(file_list))
+    for k in debug:
         if c >= 3:
             image = np.array(Image.open(file_list[k]).convert('L'))
         else:
@@ -365,7 +371,7 @@ def fourier_full_decomp(folder_dir, color, coord_df= None):
     return coord_df
 
 
-def fourier_full_decomp_3d(folder_dir, coord_df= None):
+def fourier_full_decomp_3d(folder_dir, coord_df= None, debug = False):
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     image = nib.load(file_list[0]).get_fdata()
     if coord_df is None:
@@ -376,7 +382,11 @@ def fourier_full_decomp_3d(folder_dir, coord_df= None):
     y = coord_df["y_index"].to_numpy()
     z = coord_df["z_index"].to_numpy()
     freq_arr = [0]*len(file_list)
-    for k in range(len(file_list)):
+    if debug:
+        loop = tqdm(range(len(file_list)))
+    else:
+        loop = range(len(file_list))
+    for k in loop:
         image = nib.load(file_list[0]).get_fdata()
         transformed = np.array(fft.fftn(image))
         freq_arr[k] = transformed[tuple(x), tuple(y), tuple(z)]
