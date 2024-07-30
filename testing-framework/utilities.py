@@ -8,6 +8,7 @@ import os
 import pywt
 import pywt.data
 from PIL import Image
+import scipy.special
 
 def sample_prior(r, eta, size=1):
     '''
@@ -576,7 +577,37 @@ def generate_func(sample, distro, *args):
         return eta_func
     print("Please enter a valid argument for `distro` : 'gaussian', 'laplace', 'gengamma_r', 'gengamma_eta', 't'")
 
-def var_prior(r, eta, scale=1):
+
+def change_params_power(r, eta, k):
+    r_new = r/k
+    eta_new = (eta+1.5)/k - 1.5
+    return r_new, eta_new
+
+
+def variance_prior(r, eta, scale=1):
     beta = (eta+1.5)/r
     var_prior = scale * scipy.special.gamma(beta + 1/r)/scipy.special.gamma(beta)
     return var_prior
+
+def kurtosis_prior(r, eta, fisher=True):
+    beta = (eta+1.5)/r
+    kurtosis = 3*scipy.special.gamma(beta + 2/r)*scipy.special.gamma(beta)/scipy.special.gamma(beta+1/r)**2 
+    # scipy.special.gamma(beta + 2/r)/scipy.special.gamma(beta) / variance_prior(r, eta)**2
+    if fisher:
+        return kurtosis - 3
+    else:
+        return kurtosis 
+    
+def bootstrap_metric(x, metric=None, n_bootstrap=10000, ci=0.95, replace=True):
+    metric_values = []
+    sample_size = len(x)
+    
+    for _ in range(n_bootstrap):
+        resampled = np.random.choice(x, size=n_bootstrap, replace=replace)
+        metric_values.append(metric(resampled))
+    
+    metric_point_estimate = metric(x)
+    ci_lower = np.percentile(metric_values, (1 - ci) / 2 * 100)
+    ci_upper = np.percentile(metric_values, (1 + ci) / 2 * 100)
+    
+    return metric_point_estimate, ci_lower, ci_upper, metric_values
