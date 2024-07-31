@@ -4,7 +4,7 @@ from utilities import *
 
 GROUP_NAME = 'Layer'
 
-def create_scatter_plot(df, metric=None, save_plot : bool = False):
+def create_scatter_plot(df, metric=None):
     """
     Create a scatter plot, where the color of each point represents the value from the specified metric column.
     If metric=None, plot all the (r, eta) values in df.
@@ -24,11 +24,8 @@ def create_scatter_plot(df, metric=None, save_plot : bool = False):
         ax.set_title(f'(r, eta) pairs colored by {metric}')
         cbar = fig.colorbar(scatter, ax=ax)
         cbar.set_label(metric)
-        #plt.grid(True)
+        plt.grid(True)
         plt.show()
-
-        if save_plot:
-            fig.savefig(f'panoptic/plots/panoptic/plots/(r,eta){metric}_plot.png', dpi = 300, bbox_inches = 'tight')
 
     else:
 
@@ -39,14 +36,13 @@ def create_scatter_plot(df, metric=None, save_plot : bool = False):
         ax.set_xlabel('r')
         ax.set_ylabel('eta')
         ax.set_title('(r, eta) pairs for which CDFs are computed (Linear eta)')
-        #plt.grid(True)
+        plt.grid(True)
         plt.show()
 
-        if save_plot:
-            fig.savefig(f'panoptic/plots/(r,eta)_plot.png', dpi = 300, bbox_inches = 'tight')
+    return fig
 
 
-def create_scatter_plots(df, metric1 : str, metric2 : str, save_plot : bool = False):
+def create_scatter_plots(df, metric1, metric2):
     """
     Create two scatter plots side by side, where the color of each point in the first plot represents the value from the first specified metric column, and the color of each point in the second plot represents the value from the second specified metric column.
 
@@ -76,10 +72,9 @@ def create_scatter_plots(df, metric1 : str, metric2 : str, save_plot : bool = Fa
     plt.subplots_adjust(wspace=0.3)
     plt.show()
 
-    if save_plot:
-        fig.savefig(f'panoptic/plots/panoptic/plots/(r,eta){metric1}_and_{metric2}_plot.png', dpi = 300, bbox_inches = 'tight')
+    return fig
 
-def create_scatter_plots_log_eta(df, metric=None, save_plot : bool = False):
+def create_scatter_plots_log_eta(df, metric=None):
     """
     Create two scatter plots side by side, where the color of each point represents the value from the specified metric column.
     
@@ -114,9 +109,6 @@ def create_scatter_plots_log_eta(df, metric=None, save_plot : bool = False):
 
         plt.show()
 
-        if save_plot:
-            fig.savefig(f'panoptic/plots/(r,eta)_plot_with_log_eta.png', dpi = 300, bbox_inches = 'tight')
-    
     else:
         
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
@@ -137,6 +129,8 @@ def create_scatter_plots_log_eta(df, metric=None, save_plot : bool = False):
         plt.subplots_adjust(wspace=0.3)
         plt.show()
 
+    return fig
+
 def create_contour_plot(df, metric):
     """
     Create a contour plot with a semi-transparent heatmap in the background, where the color represents the values from the specified metric column.
@@ -145,7 +139,6 @@ def create_contour_plot(df, metric):
     df -- A pandas DataFrame containing the columns 'r', 'eta', and the specified metric column.
     metric -- The name of the column in the DataFrame to use for color mapping.
     """
-    
 
     # Create a meshgrid from r and eta
     r_meshgrid, eta_meshgrid = np.meshgrid(df['r'].unique(), df['eta'].unique())
@@ -161,16 +154,18 @@ def create_contour_plot(df, metric):
     
     heatmap = ax.imshow(metric_meshgrid, extent=[df['r'].min(), df['r'].max(), df['eta'].min(), df['eta'].max()], origin='lower', cmap='viridis', alpha=0.5)
     
-    #contour = ax.contour(r_meshgrid, eta_meshgrid, metric_meshgrid, cmap='viridis')
+    contour = ax.contour(r_meshgrid, eta_meshgrid, metric_meshgrid, cmap='viridis')
     cbar = fig.colorbar(heatmap, ax=ax)
     cbar.set_label(metric)
     
-    #ax.clabel(contour, inline=True, fontsize=10)
+    ax.clabel(contour, inline=True, fontsize=10)
     ax.set_xlabel('r')
     ax.set_ylabel('eta')
     ax.set_title('Contour Plot (r, eta) colored by {}'.format(metric))
     
     plt.show()
+
+    return fig
 
 def visualize_cdf(sample, params, distro='gengamma', n_samples=10000, interval=None, provided_loc=None, all_cdfs=None, group=None):
     """

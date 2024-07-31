@@ -387,8 +387,7 @@ def add_cdfs(r_range, eta_range, n_samples, scipy_int=True, folder_name='', debu
                 r_cdf[(r, eta)] = computed_cdf
                 cut_max_eta = eta
                 break
-            if r_cdf:
-                r_cdf[(r, eta)] = computed_cdf
+            r_cdf[(r, eta)] = computed_cdf
 
         # Store pickle every outer loop iteration as its own file
         # CDFs/<optional_folder_name><number of samples>/<r>_<min(eta)>-<max(eta)>.pickle
@@ -603,7 +602,7 @@ def bootstrap_metric(x, metric=None, n_bootstrap=10000, ci=0.95, replace=True):
     sample_size = len(x)
     
     for _ in range(n_bootstrap):
-        resampled = np.random.choice(x, size=n_bootstrap, replace=replace)
+        resampled = np.random.choice(x, size=sample_size, replace=replace)
         metric_values.append(metric(resampled))
     
     metric_point_estimate = metric(x)
