@@ -195,7 +195,122 @@ def compute_prior_cdf(r, eta, n_samples=10000, tail_bound=0.05, tail_percent=0.0
         return xs, prior_pdf, cdf_spline
     else:
         return cdf_spline
+def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples = 10000, tail_bound = 0.05, tail_percent = 0.01, scale = 1, scipy_int=True, eng= None, enforce_assert=True, return_assert = False, return_xs=False, debug=False):
+    
+    beta = (eta + 1.5)/r 
+    var_prior = scale * scipy.special.gamma(beta + 1/r)/scipy.special.gamma(beta)
+        
+    cheby = np.sqrt(var_prior/(tail_bound))
+    if np.isnan(var_prior):
+        cheby = 1e100
+    n_tail = int(n_samples*tail_percent)
+    
+    # introduced additional bound in case chebyshev is unwieldy
+    x_max = min(99, cheby) 
+    if cheby < 120:
+        n_tail = 0
+        if debug:
+            print(f"No tail")
+    if debug:
+        print(f"Chebyshev bound: {cheby}")
 
+    xs = np.linspace(-x_max, x_max, n_samples-2*n_tail)
+    xs = np.append(-np.logspace(np.log10(cheby), 2, n_tail), xs)
+    xs = np.append(xs, np.logspace(2, np.log10(cheby), n_tail))
+
+    prior_cdf = np.full(xs.shape, np.nan)
+
+    if debug:
+        loop = tqdm(range(len(xs)))
+    else:
+        loop = range(len(xs))
+    for j in loop:
+
+        x = xs[j]
+        # Note that theta = variance, np.sqrt(theta) = SD
+        def gauss_density(z):
+            return (1/(np.sqrt(2*np.pi)) * np.exp(-0.5*(x**2)))
+
+        def gen_gamma_cdf(x):
+            return special.gammainc(beta, x**r)
+
+        def integrand(z):
+            return gauss_density(z) * (1-gen_gamma_cdf((x/z)**2))
+
+        if scipy_int:
+            res = integrate.quad(integrand, 0, np.inf)[0]
+            if x > 0:
+                res = 1-res
+            prior_cdf[j] = res
+        else:
+            prior_cdf[j] = eng.compute_cdf_using_gengamma(float(r), float(eta), float(x), nargout=1)
+        
+    normalizer = prior_cdf[-1]
+    first = prior_cdf[1]
+
+    if debug:
+        print("First CDF value:", first)
+        print("Last CDF value:", normalizer)
+
+    if return_assert:
+        if not 0.05 > first > -0.05:
+            return None
+        if not 1.05 > normalizer > 0.95:
+            return None    
+
+    if enforce_assert:
+        assert 0.01 > first > -0.01    
+        assert 1.01 > normalizer > 0.99
+    
+    prior_cdf = (prior_cdf - first)
+    normalizer_new = prior_cdf[-1]
+    prior_cdf = prior_cdf/normalizer_new
+
+    if cheby > 1e10:
+        k = 10
+    else:
+        k = int(0.01*len(xs))
+   
+
+    zero_padding = np.zeros(k)
+    ones_padding = np.ones(k)
+    
+    pad_max = max(10e5, np.round(max(np.abs(xs)) ** 2))
+    step_size = (pad_max - xs[0]/2)/k
+    
+    if debug:
+        print(f"0, 1 padding bounds: {pad_max}")
+
+    prior_cdf_padded = np.concatenate([zero_padding, prior_cdf, ones_padding])
+    xs_padded = np.concatenate([
+        np.arange(-pad_max, xs[0]/2, step_size),
+        xs,
+        np.arange(xs[-1] *2, pad_max, step_size)
+    ])
+
+    cdf_spline = interpolate.CubicSpline(x=xs_padded, y=prior_cdf_padded, bc_type=((1, 0.0), (1, 0.0)))
+
+    if enforce_assert:
+        x = np.sort(sample_prior(r, eta, 100000))
+        res = stats.ks_1samp(x, cdf_spline)
+        assert 0 <= res.statistic <= 1
+        if res.pvalue < 0.01:
+            assert np.abs(res.statistic_location) > cheby
+    if return_assert:
+        x = np.sort(sample_prior(r, eta, 100000))
+        res = stats.ks_1samp(x, cdf_spline)
+        if not 0 <= res.statistic <= 1:
+            return None
+        if res.pvalue < 0.01:
+            if not np.abs(res.statistic_location) > cheby:
+                return None
+
+    if return_xs:
+        return xs, cdf_spline
+    else:
+        return cdf_spline
+
+        
 def round_to_sigfigs(x, num_sigfigs=5):
     if x == np.zeros_like(x):
         return 0
