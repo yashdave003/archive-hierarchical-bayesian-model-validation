@@ -24,7 +24,7 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
         raise Exception("This Directory Does Not Contain CDFs")
     
     if folder_name == '':
-        folder_name = f'r{min(r_range)}to{max(r_range)}_eta{min(eta_range)}to{max(eta_range)}'
+        folder_name = f'r{round_to_sigfigs(min(r_range))}to{round_to_sigfigs(max(r_range))}_eta{round_to_sigfigs(min(eta_range))}to{round_to_sigfigs(max(eta_range))}'
 
     FOLDER_PATH = os.path.join("CDFs", folder_name)
 
@@ -45,8 +45,6 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
         for eta in eta_range:
             eta = round_to_sigfigs(eta)
             if ((r, eta) in cdfs_completed) and cdfs_completed[(r, eta)]:
-                with open("generate_CDF_log_brandon.csv", 'a') as handle:
-                    handle.write(f"{r}, {eta}, {n_samples}, already computed\n")
                 continue
             cnt += 1
             if debug:
@@ -72,14 +70,15 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
 
 # 2. 
 all_eta = np.arange(0,5,0.1)
-all_r = np.arange(0.01, 2, 0.01)
-n_samples = 5000
+all_r = np.arange(0.2, 2, 0.01)
+n_samples = 2000
 tail_percent = 0.1
-tail_bound = 0.0001
+tail_bound = 0.001
 
 # 1. log_eta eta=10^-1 to 10^-9 with spacing of 10^-2, r = 0.1 to 8, 0.1 (Yash)
-# 2. r=lowest to 0.2, spacing 0.01; eta 0 to 5, 0.1; tail_bound= 0.0001, n_samples=5000 
-# 3. r=0.2 to 2, spacing 0.01; eta = 0 to 5, 0.1; tail_bound=0.001, n_samples=2000
+# 2a. r=lowest to 0.1, spacing 0.01; eta 0 to 5, 0.1; tail_bound= 0.00001, n_samples=5000
+# 2b. r=0.1 to 0.2, spacing 0.01; eta 0 to 5, 0.1; tail_bound= 0.0001, n_samples=5000  
+# 3. r=0.2 to 2, spacing 0.01; eta = 0 to 5, 0.1; tail_bound=0.0001, n_samples=2000
 # 4. r=2 to 5, spacing 0.01, eta = 0 to 10, 0.1, tail_bound=0.01, n_samples=1000
 # 5. r=5 to 10, spacing 0.1, eta = 0 to 10, 0.1, tail_bound=0.01, n_samples=1000 (Yash)
 # 6. r=10 to 50, spacing 1, eta = 0 to 10, 1, tail_bound=0.01, n_samples=1000 (Yash)

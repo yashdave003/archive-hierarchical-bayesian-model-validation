@@ -244,11 +244,9 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples = 2000, tail_bound = 0.0
         res = stats.ks_1samp(x, cdf_spline)
         if debug:
             print(res)
-        if not 0 <= res.statistic <= 1:
+        if not 0 <= res.statistic <= .1:
             return None
-        if res.pvalue < 0.01:
-            if not np.abs(res.statistic_location) > cheby:
-                return None
+        
 
     if return_xs:
         return xs, cdf_spline
@@ -343,11 +341,9 @@ def compute_prior_cdf_using_normal_cdf(r, eta, n_samples = 2000, tail_bound = 0.
         res = stats.ks_1samp(x, cdf_spline)
         if debug:
             print(res)
-        if not 0 <= res.statistic <= 1:
+        if not 0 <= res.statistic <= .1:
             return None
-        if res.pvalue < 0.01:
-            if not np.abs(res.statistic_location) > cheby:
-                return None
+        
     
     if return_xs:
         return xs, cdf_spline
