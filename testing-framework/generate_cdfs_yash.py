@@ -70,7 +70,7 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
     if debug:
         print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
-all_eta = 10.0**np.arange(-1, -10, -2)
+all_eta = 10.0**np.arange(-10, -1, 2)
 all_r = np.arange(0.1, 8, 0.1)
 n_samples = 1000
 tail_percent = 0.1
