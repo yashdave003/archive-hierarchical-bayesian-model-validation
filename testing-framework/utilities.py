@@ -237,9 +237,7 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples = 2000, tail_bound = 0.0
         res = stats.ks_1samp(x, cdf_spline)
         if debug:
             print(res)
-        assert 0 <= res.statistic <= 1
-        if res.pvalue < 0.01:
-            assert np.abs(res.statistic_location) > cheby
+        assert 0 <= res.statistic <= .1
 
     if return_assert:
         x = np.sort(sample_prior(r, eta, 100000))
@@ -336,7 +334,7 @@ def compute_prior_cdf_using_normal_cdf(r, eta, n_samples = 2000, tail_bound = 0.
         res = stats.ks_1samp(x, cdf_spline)
         if debug:
             print(res)
-        assert 0 <= res.statistic <= 1
+        assert 0 <= res.statistic <= .1
         if res.pvalue < 0.01:
             assert np.abs(res.statistic_location) > cheby
 
