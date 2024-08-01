@@ -8,3 +8,4 @@ seaborn==0.13.2
 PyWavelets
 matlabengine
 ipykernel
+tqdm
