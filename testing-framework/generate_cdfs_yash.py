@@ -24,7 +24,7 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
         raise Exception("This Directory Does Not Contain CDFs")
     
     if folder_name == '':
-        folder_name = f'r{min(r_range)}-{max(r_range)}_eta{min(eta_range)}-{max(eta_range)}'
+        folder_name = f'r{min(r_range)}to{max(r_range)}_eta{min(eta_range)}to{max(eta_range)}'
 
     FOLDER_PATH = os.path.join("CDFs", folder_name)
 
@@ -45,7 +45,7 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
         for eta in eta_range:
             eta = round_to_sigfigs(eta)
             if ((r, eta) in cdfs_completed) and cdfs_completed[(r, eta)]:
-                with open("generate_CDF_log.csv", 'a') as handle:
+                with open("generate_CDF_log_yash.csv", 'a') as handle:
                     handle.write(f"{r}, {eta}, {n_samples}, already computed\n")
                 continue
             cnt += 1
@@ -55,7 +55,7 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
             computed_cdf = compute_prior_cdf(r = r, eta = eta, method = 'gamma_cdf', n_samples = n_samples, tail_percent = tail_percent, tail_bound = tail_bound, 
                                              use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, debug=debug)
             if computed_cdf is None:
-                with open("generate_CDF_log.csv", 'a') as handle:
+                with open("generate_CDF_log_yash.csv", 'a') as handle:
                     handle.write(f"{r}, {eta}, {n_samples}, failed assert\n")
                 continue
             r_cdf[(r, eta)] = computed_cdf
