@@ -38,7 +38,7 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
 
     n = len(r_range)*len(eta_range)
 
-    cnt = 0
+    cnt = len(cdfs_completed)
     for r in r_range:
         r_cdf = dict()
         r = round_to_sigfigs(r)
@@ -69,16 +69,16 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
         print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
 # 2. 
-all_eta = np.arange(0,5,0.1)
-all_r = np.arange(0.2, 2, 0.01)
-n_samples = 2000
+all_eta = np.arange(0,10,0.1)
+all_r = np.arange(2, 5, 0.01)
+n_samples = 1000
 tail_percent = 0.1
-tail_bound = 0.001
+tail_bound = 0.01
 
 # 1. log_eta eta=10^-1 to 10^-9 with spacing of 10^-2, r = 0.1 to 8, 0.1 (Yash)
 # 2a. r=lowest to 0.1, spacing 0.01; eta 0 to 5, 0.1; tail_bound= 0.00001, n_samples=5000
 # 2b. r=0.1 to 0.2, spacing 0.01; eta 0 to 5, 0.1; tail_bound= 0.0001, n_samples=5000  
-# 3. r=0.2 to 2, spacing 0.01; eta = 0 to 5, 0.1; tail_bound=0.0001, n_samples=2000
+# 3. r=0.2 to 2, spacing 0.01; eta = 0 to 5, 0.1; tail_bound=0.001, n_samples=2000
 # 4. r=2 to 5, spacing 0.01, eta = 0 to 10, 0.1, tail_bound=0.01, n_samples=1000
 # 5. r=5 to 10, spacing 0.1, eta = 0 to 10, 0.1, tail_bound=0.01, n_samples=1000 (Yash)
 # 6. r=10 to 50, spacing 1, eta = 0 to 10, 1, tail_bound=0.01, n_samples=1000 (Yash)
