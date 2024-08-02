@@ -24,7 +24,7 @@ def create_scatter_plot(df, metric=None):
         ax.set_title(f'(r, eta) pairs colored by {metric}')
         cbar = fig.colorbar(scatter, ax=ax)
         cbar.set_label(metric)
-        plt.grid(True)
+        plt.grid(which='both')
         plt.show()
 
     else:
@@ -36,7 +36,7 @@ def create_scatter_plot(df, metric=None):
         ax.set_xlabel('r')
         ax.set_ylabel('eta')
         ax.set_title('(r, eta) pairs for which CDFs are computed (Linear eta)')
-        plt.grid(True)
+        plt.grid(which='both')
         plt.show()
 
     return fig

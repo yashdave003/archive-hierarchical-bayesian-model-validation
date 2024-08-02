@@ -22,14 +22,14 @@ def compute_prior_pdf(r, eta, method='gamma_cdf', n_samples = 10000, tail_bound 
     elif method == 'numerical_old':
         return compute_prior_pdf_using_numerical_old(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=True)
 
-def compute_prior_cdf(r, eta, method='gamma_cdf', n_samples = 10000, tail_bound = 0.01, tail_percent = 0.1, scale = 1, use_matlab=False, eng= None, debug=False, enforce_assert=True, return_assert=False, return_xs=False):
+def compute_prior_cdf(r, eta, method='gamma_cdf', n_samples = 1000, tail_bound = 0.01, tail_percent = 0.1, scale = 1, use_matlab=False, eng= None, debug=False, enforce_assert=True, return_assert=False, return_xs=False):
 
     if method == 'gamma_cdf':
-        return compute_prior_cdf_using_gamma_cdf(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=return_xs)
+        return compute_prior_cdf_using_gamma_cdf(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=return_xs, debug=debug)
     elif method == 'normal_cdf':
-        return compute_prior_cdf_using_normal_cdf(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=return_xs)
+        return compute_prior_cdf_using_normal_cdf(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=return_xs, debug=debug)
     elif method == 'numerical_old':
-        return compute_prior_cdf_using_numerical_old(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=return_xs)
+        return compute_prior_cdf_using_numerical_old(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=return_xs, debug=debug)
     else:
         print("Not a valid method, valid options are: gamma_cdf, normal_cdf, numerical_old")
 
@@ -174,7 +174,7 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples = 2000, tail_bound = 0.0
             return (1/(np.sqrt(2*np.pi)) * np.exp(-0.5*(x**2)))
 
         def gen_gamma_cdf(x):
-            return special.gammainc(beta, x**r)
+            return scipy.special.gammainc(beta, x**r)
 
         def integrand(z):
             return gauss_density(z) * (1-gen_gamma_cdf((x/z)**2))
@@ -194,7 +194,7 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples = 2000, tail_bound = 0.0
         print("First CDF value:", first)
         print("Last CDF value:", normalizer)
 
-    eps = 0.01
+    eps = tail_bound
     if return_assert:
         if not -eps < first < eps:
             return None
@@ -205,6 +205,7 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples = 2000, tail_bound = 0.0
         assert -eps < first < eps    
         assert 1 - eps < normalizer < 1 + eps
     
+    # Normalization?
     prior_cdf = (prior_cdf - first)
     normalizer_new = prior_cdf[-1]
     prior_cdf = prior_cdf/normalizer_new
@@ -714,7 +715,7 @@ def generate_func(sample, distro, *args):
                 cdf = cache[(r, eta)]
                 return compute_ksstat(sample, cdf)
             else:
-                cdf = compute_prior_cdf(r, eta)
+                cdf = compute_prior_cdf(r, eta, n_samples=100)
             cache[(r, eta)] = cdf
             pd.to_pickle(cache, "CDFs/optimize_cache.pickle")
             return compute_ksstat(sample, cdf)
@@ -725,7 +726,7 @@ def generate_func(sample, distro, *args):
             cache = pd.read_pickle('CDFs/optimize_cache.pickle')
             if (r, eta) in cache:
                 cdf = cache[(r, eta)]
-                return compute_ksstat(sample, cdf)
+                return compute_ksstat(sample, cdf, n_samples=100)
             else:
                 cdf = compute_prior_cdf(r, eta)
             cache[(r, eta)] = cdf

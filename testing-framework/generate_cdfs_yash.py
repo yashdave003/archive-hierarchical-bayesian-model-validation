@@ -24,7 +24,7 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
         raise Exception("This Directory Does Not Contain CDFs")
     
     if folder_name == '':
-        folder_name = f'r{min(r_range)}to{max(r_range)}_eta{min(eta_range)}to{max(eta_range)}'
+        folder_name = f'r{round_to_sigfigs(min(r_range))}to{round_to_sigfigs(max(r_range))}_eta{round_to_sigfigs(min(eta_range))}to{round_to_sigfigs(max(eta_range))}'
 
     FOLDER_PATH = os.path.join("CDFs", folder_name)
 
@@ -38,15 +38,13 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
 
     n = len(r_range)*len(eta_range)
 
-    cnt = 0
+    cnt = len(cdfs_completed)
     for r in r_range:
         r_cdf = dict()
         r = round_to_sigfigs(r)
         for eta in eta_range:
             eta = round_to_sigfigs(eta)
             if ((r, eta) in cdfs_completed) and cdfs_completed[(r, eta)]:
-                with open("generate_CDF_log_yash.csv", 'a') as handle:
-                    handle.write(f"{r}, {eta}, {n_samples}, already computed\n")
                 continue
             cnt += 1
             if debug:
@@ -70,11 +68,11 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
     if debug:
         print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
-all_eta = 10.0**np.arange(-10, -1, 2)
-all_r = np.arange(0.1, 8, 0.1)
+all_eta = np.arange(0, 10.1, 1)
+all_r = np.arange(11, 50.1, 1)
 n_samples = 1000
 tail_percent = 0.1
-tail_bound = 0.0001
+tail_bound = 0.01
 
 # 1. log_eta eta=10^-1 to 10^-9 with spacing of 10^-2, r = 0.1 to 8, 0.1 (Yash)
 # 2. r=lowest to 0.2, spacing 0.01; eta 0 to 5, 0.1; tail_bound= 0.0001, n_samples=5000 
