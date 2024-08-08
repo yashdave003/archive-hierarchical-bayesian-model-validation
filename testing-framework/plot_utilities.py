@@ -55,19 +55,23 @@ def create_scatter_plots(df, metric1, metric2):
 
     # Plot 1 (Linear eta, colored by metric1)
     scatter1 = ax1.scatter(df['r'], df['eta'], c=df[metric1], cmap='viridis', alpha=0.6)
+    plt.grid(True)
     ax1.set_xlabel('r')
     ax1.set_ylabel('eta')
     ax1.set_title(f'(r, eta) pairs colored by {metric1}')
     cbar1 = fig.colorbar(scatter1, ax=ax1)
     cbar1.set_label(metric1)
+    
 
     # Plot 2 (Linear eta, colored by metric2)
     scatter2 = ax2.scatter(df['r'], df['eta'], c=df[metric2], cmap='viridis', alpha=0.6)
+    plt.grid(True)
     ax2.set_xlabel('r')
     ax2.set_ylabel('eta')
     ax2.set_title(f'(r, eta) pairs colored by {metric2}')
     cbar2 = fig.colorbar(scatter2, ax=ax2)
     cbar2.set_label(metric2)
+    
 
     plt.subplots_adjust(wspace=0.3)
     plt.show()
