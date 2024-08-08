@@ -1,10 +1,8 @@
 %% generate pdf for gaussian with generalized gamma variances
 %matlab.engine.shareEngine
 %% set parameters
-function res = compute_cdf_using_gengamma(r,eta, x)
-    
-    beta = (eta + 1.5)/r; % change to standard parametrization
-    scale = 1;
+function res = compute_cdf_using_gengamma(r,beta, x)
+
     gen_gamma_cdf = @(x) gammainc(x.^r, beta);
     gauss_density = @(z) (1./(sqrt(2*pi))).*exp(-0.5*(z.^2));
 
