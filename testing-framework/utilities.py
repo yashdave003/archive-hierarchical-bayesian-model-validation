@@ -160,19 +160,20 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples=1000, tail_bound=0.001, 
 
     prior_cdf_minus = np.zeros_like(xs_minus)
 
-    def gauss_density(z, x):
-        return np.exp(-0.5 * (x/z)**2) / (np.sqrt(2*np.pi) * z)
+    if use_matlab:
+        for j, x in enumerate(xs_minus):
+                prior_cdf_minus[j] = eng.compute_cdf_using_gengamma(float(r), float(beta), float(x), nargout=1)
+    else:
+        def gauss_density(z, x):
+            return np.exp(-0.5 * (x/z)**2) / (np.sqrt(2*np.pi) * z)
 
-    def gen_gamma_cdf(x):
-        return special.gammainc(beta, x**r)
+        def gen_gamma_cdf(x):
+            return special.gammainc(beta, x**r)
 
-    def integrand(z, x):
-        return gauss_density(z, x) * (1 - gen_gamma_cdf((x/z)**2))
-
-    for j, x in enumerate(xs_minus):
-        if use_matlab:
-            prior_cdf_minus[j] = eng.compute_cdf_using_gengamma(float(r), float(eta), float(x), nargout=1)
-        else:
+        def integrand(z, x):
+            return gauss_density(z, x) * (1 - gen_gamma_cdf((x/z)**2))
+        
+        for j, x in enumerate(xs_minus):
             res = integrate.quad(integrand, 0, np.inf, args=(x,))[0]
             prior_cdf_minus[j] = res
 
@@ -185,7 +186,10 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples=1000, tail_bound=0.001, 
     if return_assert or enforce_assert:
         eps = tail_bound
         if not (-eps < prior_cdf[0] < eps and 1 - eps < prior_cdf[-1] < 1 + eps):
-            return None if return_assert else AssertionError("CDF bounds not satisfied")
+            if return_assert:
+                return (xs, None) if return_xs else None
+            elif enforce_assert:
+                raise AssertionError("CDF bounds not satisfied")
         
     xs = np.concatenate(([1.01 * xs[0]], xs, [1.01 * xs[-1]]))
     prior_cdf = np.concatenate(([0], prior_cdf, [1]))
@@ -195,7 +199,10 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples=1000, tail_bound=0.001, 
         x = np.sort(sample_prior(r, eta, 10000))
         res = stats.ks_1samp(x, cdf_spline)
         if not 0 <= res.statistic <= 0.1:
-            return None if return_assert else AssertionError("KS test failed")
+            if return_assert:
+                return (xs, None) if return_xs else None
+            elif enforce_assert:
+                raise AssertionError("KS test failed")
 
     return (xs, cdf_spline) if return_xs else cdf_spline
 
