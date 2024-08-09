@@ -69,7 +69,7 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
 # n_samples = 2000, tail_bound = 1e-5
 # Brandon
 # 1. log_eta eta=10^-1 to 10^-9 with spacing of 10^-1, r = 0.1 to 10, 0.1
-# 2. r=0.02 to 2, spacing 0.01; eta 0 to 5, 0.1
+# 2. r=0.02 to 2, spacing 0.01; eta 0 to 5, 0.01
 # 3. r=2 to 10, spacing 0.1; eta = 0 to 5, 0.1
 # 4. r=10 to 50, spacing 1; eta = 0 to 5, 1
 # 5. r=50 to 101, spacing 10; eta = 0 to 5, 1
