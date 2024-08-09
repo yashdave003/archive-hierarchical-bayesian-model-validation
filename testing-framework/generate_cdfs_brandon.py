@@ -4,7 +4,7 @@ import os
 BRANDON = '/Users/brandonmarks/Desktop/Research Materials/hierarchical-bayesian-model-validation/'
 YASH = '/Users/yashd/Desktop/hierarchical-bayesian-model-validation/'
 
-ROOT_DIR = YASH
+ROOT_DIR = BRANDON
 os.chdir(ROOT_DIR + 'testing-framework/')
 
 from utilities import *
@@ -66,21 +66,22 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
     if debug:
         print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
-# 1. log_eta eta=10^-1 to 10^-9 with spacing of 10^-2, r = 0.1 to 10, 0.1 # Yash
+# n_samples = 2000, tail_bound = 1e-5
+# Brandon
+# 1. log_eta eta=10^-1 to 10^-9 with spacing of 10^-1, r = 0.1 to 10, 0.1
+# 2. r=0.02 to 2, spacing 0.01; eta 0 to 5, 0.1
+# 3. r=2 to 10, spacing 0.1; eta = 0 to 5, 0.1
+# 4. r=10 to 50, spacing 1; eta = 0 to 5, 1
+# 5. r=50 to 101, spacing 10; eta = 0 to 5, 1
 
-# 2. r=0.02 to 0.2, spacing 0.01; eta 0 to 5, 0.01
-# 3. r=0.2 to 2, spacing 0.01; eta = 5 to 10.1, 0.1
+# Yash
+# 6. r=0.02 to 2, spacing 0.01; eta 5 to 10, 0.1 + eta 10 to 21, 1
+# 7. r=2 to 10, spacing 0.1; eta = 5 to 10, 0.1 + eta 10 to 21, 1
+# 8. r=10 to 50, spacing 1; eta = 5 to 21, 1
+# 9. r=50 to 101, spacing 10; eta = 5 to 21, 1
 
-# 4. r=0.02 to 0.2, spacing 0.1; eta 5 to 10.1, 0.1
-# 5. r=0.2 to 2, spacing 0.1; eta = 5 to 10.1, 0.1
-
-# 6. r=2 to 5, spacing 0.01, eta = 0 to 10.1, 0.1 # Yash
-# 7. r=5 to 10, spacing 0.1, eta = 0 to 10.1, 0.1 # Yash
-# 8. r=10 to 51, spacing 1, eta = 0 to 11, 1 # Yash
-
-# 2.
-all_eta = np.arange(0, 5, 0.1)
-all_r = np.arange(0.02, 0.2, 0.01)
+all_eta = np.append(np.arange(0, 10.1, 0.01), np.arange(5, 10.1, 0.1)) 
+all_r = np.arange(0.02, 2, 0.01)
 n_samples = 2000
 tail_percent = 0.1
 tail_bound = 1e-5
