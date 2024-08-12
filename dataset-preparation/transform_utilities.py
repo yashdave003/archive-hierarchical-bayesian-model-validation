@@ -392,3 +392,24 @@ def fourier_full_decomp_3d(folder_dir, coord_df= None, debug = False):
         freq_arr[k] = transformed[tuple(x), tuple(y), tuple(z)]
     coord_df["Data"]  = list(np.array(freq_arr).T)
     return coord_df
+
+
+def directorySplit(folder_dir, target_dir, name, k):
+    file_names = np.sort(os.listdir(folder_dir))
+    file_list = [os.path.join(folder_dir, filename) for filename in file_names]
+
+    n = len(file_list)
+    if 0< k <= 1:
+        k = int(n*k)
+
+    print(n, n//k)
+    sleep(0.3)
+    for i in range(n//k):
+        new_list = file_list[i::n//k]
+        new_names = file_names[i::n//k]
+        new_dir = os.path.join(target_dir, f"batch{i}-{name}")
+        if not os.path.exists(new_dir):
+            os.mkdir(new_dir)
+        for j in tqdm(range(len(new_list))):
+            image = Image.open(new_list[j])
+            image.save(os.path.join(new_dir, new_names[j]))
