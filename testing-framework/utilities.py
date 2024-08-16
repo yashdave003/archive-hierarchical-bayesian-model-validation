@@ -558,10 +558,12 @@ def gridsearch(sample, all_cdfs, top_k = 1, debug = False):
     num_cdfs = len(cdf_keys)
     ksstats = np.zeros(num_cdfs)
     
-    for i in range(num_cdfs):
+    if debug:
+        loop = tqdm(range(num_cdfs))
+    else:
+        loop = range(num_cdfs)
+    for i in loop:
         ksstats[i] = compute_ksstat(sample, cdf_splines[i])
-        if debug:
-            print(f"Computing {i} of {num_cdfs}")
     
     min_k = 2*np.ones(top_k).astype(int)
     if debug:

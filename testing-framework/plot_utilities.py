@@ -2,7 +2,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from utilities import *
 
-GROUP_NAME = 'Layer'
+GROUP_NAME = 'Group (Layer/Band)'
 
 def create_scatter_plot(df, metric=None):
     """
@@ -13,31 +13,34 @@ def create_scatter_plot(df, metric=None):
     df : A pandas DataFrame containing the columns 'r', 'eta', and the specified metric column.
     metric : The name of the column in the DataFrame to use for color mapping.
     """
+    fig, ax = plt.subplots(figsize=(12, 6))
+
     if metric:
+        if pd.api.types.is_numeric_dtype(df[metric]):
+            scatter = ax.scatter(df['r'], df['eta'], c=df[metric], cmap='viridis', alpha=1)
+            cbar = fig.colorbar(scatter, ax=ax)
+            cbar.set_label(metric)
+        else:
+            categories = df[metric].unique()
+            color_map = plt.colormaps['accent']  # Updated line
+            colors = {cat: color_map(i/len(categories)) for i, cat in enumerate(categories)}
+            
+            for cat in categories:
+                mask = df[metric] == cat
+                ax.scatter(df.loc[mask, 'r'], df.loc[mask, 'eta'], 
+                           c=[colors[cat]], label=cat, alpha=1)
+            
+            ax.legend(title=metric)
 
-        fig, ax = plt.subplots(figsize=(12, 6))
-
-        # Plot 1 (Linear eta)
-        scatter = ax.scatter(df['r'], df['eta'], c=df[metric], cmap='viridis', alpha=1)
-        ax.set_xlabel('r')
-        ax.set_ylabel('eta')
         ax.set_title(f'(r, eta) pairs colored by {metric}')
-        cbar = fig.colorbar(scatter, ax=ax)
-        cbar.set_label(metric)
-        plt.grid(which='both')
-        plt.show()
-
     else:
-
-        fig, ax = plt.subplots(figsize=(12, 6))
-
-        # Plot 1 (Linear eta)
         sns.scatterplot(x=df['r'], y=df['eta'], color='xkcd:shamrock green', alpha=1, ax=ax)
-        ax.set_xlabel('r')
-        ax.set_ylabel('eta')
         ax.set_title('(r, eta) pairs for which CDFs are computed (Linear eta)')
-        plt.grid(which='both')
-        plt.show()
+
+    ax.set_xlabel('r')
+    ax.set_ylabel('eta')
+    plt.grid(which='both')
+    plt.show()
 
     return fig
 
