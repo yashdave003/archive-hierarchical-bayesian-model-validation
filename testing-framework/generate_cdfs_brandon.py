@@ -66,27 +66,12 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
     if debug:
         print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
-# n_samples = 2000, tail_bound = 1e-5
-# Brandon
-# 1. log_eta eta=10^-1 to 10^-9 with spacing of 10^-1, r = 0.1 to 10, 0.1
-# 2. r=0.02 to 2, spacing 0.01; eta 0 to 5, 0.1
-# 3. r=2 to 10, spacing 0.1; eta = 0 to 5, 0.1
-# 4. r=10 to 50, spacing 1; eta = 0 to 5, 1
-# 5. r=50 to 101, spacing 10; eta = 0 to 5, 1
-
-# Yash
-# 6. r=0.02 to 2, spacing 0.01; eta 5 to 10, 0.1 + eta 10 to 21, 1
-# 7. r=2 to 10, spacing 0.1; eta = 5 to 10, 0.1 + eta 10 to 21, 1
-# 8. r=10 to 50, spacing 1; eta = 5 to 21, 1
-# 9. r=50 to 101, spacing 10; eta = 5 to 21, 1
-
-#all_eta = np.append(np.arange(0, 10.1, 0.01), np.arange(5, 10.1, 0.1)) 
-all_eta = np.arange(5, 21, 1)
-all_r = np.arange(50, 101, 1)
+all_eta = np.arange(20, 51, 1)
+all_r = np.append(np.arange(0.1, 10, 0.1), np.arange(10, 100, 1))
 n_samples = 2000
 tail_percent = 0.1
 tail_bound = 1e-5
-print(n_samples)
+
 simple_add_cdfs(all_r, all_eta, n_samples = n_samples, folder_name='',
                 tail_percent = tail_percent, tail_bound = tail_bound, use_matlab=True, 
                 eng=eng, enforce_assert=False, return_assert=True, debug=True)
