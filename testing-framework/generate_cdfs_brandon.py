@@ -4,17 +4,10 @@ import os
 BRANDON = '/Users/brandonmarks/Desktop/Research Materials/hierarchical-bayesian-model-validation/'
 YASH = '/Users/yashd/Desktop/hierarchical-bayesian-model-validation/'
 
-ROOT_DIR = BRANDON
+ROOT_DIR = YASH
 os.chdir(ROOT_DIR + 'testing-framework/')
 
 from utilities import *
-# USE_MATLAB = True
-# if USE_MATLAB:
-#     import matlab.engine 
-#     eng = matlab.engine.connect_matlab()
-# else:
-#     eng=None
-
 
 def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail_bound = 0.01, tail_percent = 0.1, use_matlab=False, eng=None, enforce_assert=True, return_assert = False, debug=False):
 
