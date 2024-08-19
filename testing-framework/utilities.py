@@ -17,7 +17,7 @@ if USE_MATLAB:
     import matlab.engine 
     eng = matlab.engine.connect_matlab()
 
-def compute_prior_pdf(r, eta, method='gamma_cdf', n_samples = 10000, tail_bound = 0.01, tail_percent = 0.1, scale = 1, use_matlab=False, eng= None, debug=False, enforce_assert=True, return_assert=False):
+def compute_prior_pdf(r, eta, method='gamma_cdf', n_samples = 10000, tail_bound = 0.01, tail_percent = 0.1, scale = 1, use_matlab=False, eng=None, debug=False, enforce_assert=True, return_assert=False):
     
     if method == 'gamma_cdf':
         xs, cdf = compute_prior_cdf_using_gamma_cdf(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=True)
@@ -41,7 +41,7 @@ def compute_prior_cdf(r, eta, method='gamma_cdf', n_samples = 1000, tail_bound =
     else:
         print("Not a valid method, valid options are: gamma_cdf, normal_cdf, numerical_old")
 
-def compute_prior_pdf_using_numerical_old(r, eta, n_samples = 10000, tail_bound = 0.01, tail_percent = 0.1, scale = 1, use_matlab=False, eng= None, debug=False, return_xs=True):
+def compute_prior_pdf_using_numerical_old(r, eta, n_samples = 10000, tail_bound = 0.01, tail_percent = 0.1, scale = 1, use_matlab=False, eng=None, debug=False, return_xs=True):
 
     beta = (eta + 1.5)/r 
     var_prior = scale * scipy.special.gamma(beta + 1/r)/scipy.special.gamma(beta)
@@ -772,8 +772,6 @@ def coord_descent_scipy(sample, initial_param):
     return (r_2, eta_1)
 
 
-
-
 def change_params_power(r, eta, k):
     r_new = r/k
     eta_new = (eta+1.5)/k - 1.5
@@ -794,14 +792,12 @@ def kurtosis_prior(r, eta, fisher=True):
     else:
         return kurtosis 
     
-def bootstrap_metric(x, metric=None, n_bootstrap=10000, ci=0.95, replace=True):
+def bootstrap_metric(x, metric=None, n_bootstrap=10000, bootstrap_size = 10000, ci=0.95, replace=True):
     metric_values = []
-    sample_size = len(x)
-    
     for _ in range(n_bootstrap):
-        resampled = np.random.choice(x, size=sample_size, replace=replace)
+        resampled = np.random.choice(x, size=bootstrap_size, replace=replace)
         metric_values.append(metric(resampled))
-    
+        
     metric_point_estimate = metric(x)
     ci_lower = np.percentile(metric_values, (1 - ci) / 2 * 100)
     ci_upper = np.percentile(metric_values, (1 + ci) / 2 * 100)
