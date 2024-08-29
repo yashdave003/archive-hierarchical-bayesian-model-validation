@@ -175,7 +175,7 @@ def create_contour_plot(df, metric):
 
     return fig
 
-def visualize_cdf(params, sample = None, distro='gengamma', n_samples=1000, interval=None, provided_loc=None, all_cdfs=None, group=None):
+def visualize_cdf(params, sample = [], distro='gengamma', n_samples=1000, interval=None, provided_loc=None, all_cdfs=None, group=None):
     """
     Visualize the gap between the empirical CDF and the computed CDF.
 
@@ -192,17 +192,14 @@ def visualize_cdf(params, sample = None, distro='gengamma', n_samples=1000, inte
     Returns:
         fig (matplotlib.figure.Figure): The figure object containing the plot.
     """
-    if sample:
-        xs = np.linspace(max(np.min(sample), -5000), min(np.max(sample), 5000), 10000)
+    if len(sample) > 0:
+        xs = np.linspace(max(np.min(sample), -5000), min(np.max(sample), 5000), 20000)
         sample = np.sort(sample)
         n = len(sample)
 
     if distro == 'gengamma':
         r, eta = params
-        if all_cdfs and (r, eta) in all_cdfs:
-            null_cdf = all_cdfs[(r, eta)]
-        else:
-            null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples)
+        null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples)
     elif distro == 'gaussian' or distro == 'normal':
         null_cdf = stats.norm(scale=params).cdf
     elif distro == 'laplace':
@@ -216,7 +213,7 @@ def visualize_cdf(params, sample = None, distro='gengamma', n_samples=1000, inte
     if interval:
         ax.set_xlim(left=interval[0], right=interval[1])
 
-    if sample:
+    if len(sample) > 0:
         ax.plot(sample, np.arange(1, n+1)/n, label='Empirical CDF')
         result = stats.ks_1samp(sample, null_cdf)
         distance = result.statistic
@@ -236,7 +233,7 @@ def visualize_cdf(params, sample = None, distro='gengamma', n_samples=1000, inte
                     color='xkcd:shamrock green')
     ax.plot(xs, null_cdf(xs), label='Computed CDF')
     
-    if sample:
+    if len(sample) > 0:
         if distro == 'gengamma':
             r, eta = params
             ax.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
@@ -251,7 +248,7 @@ def visualize_cdf(params, sample = None, distro='gengamma', n_samples=1000, inte
 
     return fig
 
-def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_samples=1000, interval = None, provided_loc = None, all_cdfs=None, group=None, bw = 0.05, bw_log = 0.05):
+def visualize_cdf_pdf(params, sample=[], distro = 'gengamma', log_scale = True, n_samples=1000, interval = None, provided_loc = None, group=None, bw = 0.05, bw_log = 0.05):
     """
     Visualize the gap between the empirical CDF/PDF and the Computed CDF/PDF.
 
@@ -267,17 +264,15 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         distance (float): The Kolmogorov-Smirnov statistic.
         location (float): The location of the maximum deviation between the empirical and computed CDFs.
     """
-    xs = np.linspace(max(-10000, np.min(sample)), min(np.max(sample), 10000), 20000)
-    sample = np.sort(sample)
-    n = len(sample)
+    if len(sample) > 0:
+        xs = np.linspace(max(-10000, np.min(sample)), min(np.max(sample), 10000), 20000)
+        sample = np.sort(sample)
+        n = len(sample)
     
     if distro == 'gengamma':
         r, eta = params
-        if all_cdfs and (r, eta) in all_cdfs:
-            null_cdf = all_cdfs[(r, eta)]
-        else:
-            xs_pdf, null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples, enforce_assert=False, debug=True, return_xs=True)
-            null_pdf = null_cdf.derivative()(xs_pdf)
+        xs_pdf, null_cdf = compute_prior_cdf(r=r, eta=eta, n_samples=n_samples, enforce_assert=False, debug=True, return_xs=True)
+        null_pdf = null_cdf.derivative()(xs_pdf)
         
     elif distro == 'gaussian' or distro == 'normal':
         null_cdf = stats.norm(scale=params).cdf
@@ -296,20 +291,27 @@ def visualize_cdf_pdf(sample, params, distro = 'gengamma', log_scale = True, n_s
         ax1.set_xlim(left = -25, right = 25)
         if interval:
             ax1.set_xlim(left = interval[0], right = interval[1])
-        ax1.plot(sample, np.arange(1, n+1)/n, label='Empirical CDF')
-        ax1.plot(xs, null_cdf(xs), label='Computed CDF')
-        result = stats.ks_1samp(sample, null_cdf)
-        distance = result.statistic
-        location = result.statistic_location
-        emp_cdf_at_loc = np.searchsorted(sample, location, side='right') / n
-        computed_cdf_at_loc = null_cdf(location)
 
+        if len(sample) > 0:
+            ax1.plot(sample, np.arange(1, n+1)/n, label='Empirical CDF')
+            result = stats.ks_1samp(sample, null_cdf)
+            distance = result.statistic
+            location = result.statistic_location
+            emp_cdf_at_loc = np.searchsorted(sample, location, side='right') / n
+            computed_cdf_at_loc = null_cdf(location)
+        ax1.plot(xs, null_cdf(xs), label='Computed CDF')
+        
         ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
-        if provided_loc:
+        if len(sample) > 0 and provided_loc:
             emp_cdf_at_provided_loc = np.searchsorted(sample, provided_loc, side='right') / n
             computed_cdf_at_provided_loc = null_cdf(provided_loc)
             ax1.vlines(provided_loc, emp_cdf_at_provided_loc, computed_cdf_at_provided_loc, linestyles='--', label=f'Deviation: {np.round(emp_cdf_at_provided_loc - computed_cdf_at_provided_loc, 6)}\nat x={np.round(provided_loc, 6)}', color='xkcd:shamrock green')
-        if distro == 'gengamma':
+        
+        if len(sample) == 0:
+            ax1.set_title(f'Visualized {distro} CDF with params {params}')
+            ax2.set_title(f'Visualized {distro} PDF with params {params}')
+            ax3.set_title(f'Visualized {distro} PDF (log-scale) with params {params}')
+        elif distro == 'gengamma':
             ax1.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical CDF vs Computed CDF \n (r={r}, eta={eta}) with p-value:{np.round(result.pvalue, 8)}')
             ax2.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Empirical PDF vs Computed PDF \n (r={r}, eta={eta})')
             ax3.set_title(f'{f"{GROUP_NAME} {group}" if group else ""} Log Scale:\n Empirical PDF vs Computed PDF (r={r}, eta={eta})')

@@ -80,8 +80,8 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
 # 8. r=10 to 50, spacing 1; eta = 5 to 21, 1
 # 9. r=50 to 101, spacing 10; eta = 5 to 21, 1
 
-all_eta = np.arange(0, 5, 0.1)
-all_r = np.arange(-0.9, -5, -0.1)
+all_eta = np.arange(-1.4, 0, 0.1)
+all_r = np.arange(0.1, 10, 0.1)
 n_samples = 2000
 tail_percent = 0.1
 tail_bound = 1e-5

@@ -155,6 +155,7 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples=1000, tail_bound=0.001, 
     n_tail = int(n_samples * tail_percent) if cheby >= 120 else 0
 
     if debug:
+        print(f"Params: {r}, {eta}")
         print(f"Chebyshev bound: {cheby}")
         print(f"{'No tail' if n_tail == 0 else f'Tail samples: {n_tail}'}")
 
