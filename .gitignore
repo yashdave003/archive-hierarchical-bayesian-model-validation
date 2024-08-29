@@ -16,3 +16,5 @@ testing-framework/full-pastis-gray-wavelet/filtered_df_dict_full.pickle
 testing-framework/full-pastis-gray-wavelet/filtered_df_dict_initial.pickle
 testing-framework/full-pastis-gray-wavelet/group_cdf_df_dict_initial.pickle
 testing-framework/full-pastis-gray-wavelet/group_cdf_df_dict_full.pickle
+testing-framework/batch0-agriVision-red-fourier/group_cdf_df_dict_full.pickle
+testing-framework/batch0-agriVision-red-fourier/group_cdf_df_dict_initial.pickle
