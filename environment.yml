@@ -1,9 +1,9 @@
-name: hbmv-test1
+name: hbmv
 channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.9
+  - python=3.11
   - numpy=2.1.1
   - pandas=2.2.2
   - scipy=1.14.1

@@ -47,7 +47,7 @@ This project uses conda for package management and requires Python 3.11. The con
 
 3. Run the setup script:
    ```
-   python setup.py
+   bash -i setup.sh
    ```
 
 4. After the script completes, activate the environment:
