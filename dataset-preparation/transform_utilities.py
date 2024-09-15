@@ -2,6 +2,7 @@ import numpy as np
 import pywt
 import matplotlib.pyplot as plt
 import random
+import scipy
 from scipy import stats
 from scipy import fft
 import random
