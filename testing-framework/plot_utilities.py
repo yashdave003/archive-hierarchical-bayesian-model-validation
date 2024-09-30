@@ -424,3 +424,50 @@ def multiSampleComparisonPlots(samps,  samp_names, bw =0.2):
         axes[1].legend()
         axes[2].legend()                                                                
     return fig
+
+
+
+def nearby_df(r, eta, n=10000, bound=0.1, grid_amt= 5, iterations = 10, rounded = 3):
+    prior_cdf = compute_prior_cdf(r, eta, n_samples= 1000, tail_percent=.1, tail_bound= 0.0001, debug = False, use_matlab=True, eng = eng)
+    check_r = np.linspace(r-bound, r+bound, 2*grid_amt+1)
+
+    check_eta = np.linspace(eta-bound, eta+bound, 2*grid_amt+1)
+
+    df = pd.DataFrame(columns = ["r", "eta", "distance", "pvalue"])
+    for r_prime in check_r:
+        for eta_prime in check_eta:
+            total_distance, total_pvalue = 0, 0
+            r_prime = np.round(r_prime, rounded)
+            eta_prime = np.round(eta_prime, rounded)
+            for _ in range(iterations):
+                obs_x = sample_prior(r_prime, eta_prime, size = n)
+                distance, pvalue = kstest_custom(obs_x, prior_cdf)
+                total_distance += distance
+                total_pvalue += pvalue
+            
+            avg_distance = total_distance/iterations
+            avg_pvalue = total_pvalue/iterations
+            df.loc[len(df)] = [r_prime, eta_prime, avg_distance, avg_pvalue]
+    return df
+
+
+def KSHeatMap(r, eta, n=10000, bound=0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 3):
+    df = nearby_df(r, eta, iterations=iterations, n=n, bound = bound, grid_amt=grid_amt, rounded=rounded)
+    if dist:
+        fig, ax = plt.subplots(figsize=(1.6*grid_amt, 1.6*grid_amt))
+        result = df.pivot(index='eta', columns='r', values='distance').sort_values("eta", ascending=True)
+        sns.heatmap(result, annot=True, fmt=f".3f", ax =ax, square=True)
+        plt.title(f"r = {r} eta = {eta}, Distances")
+        plt.yticks(rotation=0)
+        plt.xticks(rotation=0)
+        ax.invert_yaxis()
+        plt.show()
+    if pval:
+        fig, ax = plt.subplots(figsize=(1.6*grid_amt, 1.6*grid_amt))
+        result = df.pivot(index='eta', columns='r', values='pvalue').sort_values("eta", ascending=True)
+        sns.heatmap(result, annot=True, fmt=f".3f", cmap = "RdYlGn", vmin = 0.01, vmax = 0.2, square=True)
+        plt.title(f"r = {r} eta = {eta}, pvalues")
+        plt.yticks(rotation=0)
+        plt.xticks(rotation=0)
+        ax.invert_yaxis()
+        plt.show()
