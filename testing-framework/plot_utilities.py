@@ -427,11 +427,11 @@ def multiSampleComparisonPlots(samps,  samp_names, bw =0.2):
 
 
 
-def nearby_df(r, eta, n=10000, bound=0.1, grid_amt= 5, iterations = 10, rounded = 3):
+def nearby_df(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, rounded = 3):
     prior_cdf = compute_prior_cdf(r, eta, n_samples= 1000, tail_percent=.1, tail_bound= 0.0001, debug = False, use_matlab=True, eng = eng)
-    check_r = np.linspace(r-bound, r+bound, 2*grid_amt+1)
+    check_r = np.linspace(r-r_bound, r+r_bound, 2*grid_amt+1)
 
-    check_eta = np.linspace(eta-bound, eta+bound, 2*grid_amt+1)
+    check_eta = np.linspace(eta-eta_bound, eta+eta_bound, 2*grid_amt+1)
 
     df = pd.DataFrame(columns = ["r", "eta", "distance", "pvalue"])
     for r_prime in check_r:
@@ -451,8 +451,8 @@ def nearby_df(r, eta, n=10000, bound=0.1, grid_amt= 5, iterations = 10, rounded 
     return df
 
 
-def KSHeatMap(r, eta, n=10000, bound=0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 3):
-    df = nearby_df(r, eta, iterations=iterations, n=n, bound = bound, grid_amt=grid_amt, rounded=rounded)
+def KSHeatMap(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 3):
+    df = nearby_df(r, eta, iterations=iterations, n=n, r_bound = r_bound, eta_bound = eta_bound, grid_amt=grid_amt, rounded=rounded)
     if dist:
         fig, ax = plt.subplots(figsize=(1.6*grid_amt, 1.6*grid_amt))
         result = df.pivot(index='eta', columns='r', values='distance').sort_values("eta", ascending=True)
