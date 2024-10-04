@@ -451,13 +451,12 @@ def nearby_df(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterat
     return df
 
 
-def KSHeatMap(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 3):
-    df = nearby_df(r, eta, iterations=iterations, n=n, r_bound = r_bound, eta_bound = eta_bound, grid_amt=grid_amt, rounded=rounded)
+def plotKSHeatMap(df, r, eta, grid_amt= 5, pval =True, dist = True, title = ""):
     if dist:
         fig, ax = plt.subplots(figsize=(1.6*grid_amt, 1.6*grid_amt))
         result = df.pivot(index='eta', columns='r', values='distance').sort_values("eta", ascending=True)
         sns.heatmap(result, annot=True, fmt=f".3f", ax =ax, square=True)
-        plt.title(f"r = {r} eta = {eta}, Distances")
+        plt.title(f"{title}, r = {r} eta = {eta}, Distances")
         plt.yticks(rotation=0)
         plt.xticks(rotation=0)
         ax.invert_yaxis()
@@ -466,8 +465,40 @@ def KSHeatMap(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterat
         fig, ax = plt.subplots(figsize=(1.6*grid_amt, 1.6*grid_amt))
         result = df.pivot(index='eta', columns='r', values='pvalue').sort_values("eta", ascending=True)
         sns.heatmap(result, annot=True, fmt=f".3f", cmap = "RdYlGn", vmin = 0.01, vmax = 0.2, square=True)
-        plt.title(f"r = {r} eta = {eta}, pvalues")
+        plt.title(f"{title}, r = {r} eta = {eta}, pvalues")
         plt.yticks(rotation=0)
         plt.xticks(rotation=0)
         ax.invert_yaxis()
         plt.show()
+
+def KSHeatMap(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, rounded = 3, pval =True, dist = True, title = ""):
+    df = nearby_df(r, eta, iterations=iterations, n=n, r_bound = r_bound, eta_bound = eta_bound, grid_amt=grid_amt, rounded=rounded)
+    plotKSHeatMap(df=df, r=r, eta=eta, grid_amt=grid_amt, pval=pval, dist =  dist, title = title)
+
+
+def KSHeatMapFullProcess(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 4, accept_pval = 0.05, good_pct = 0.8, title= ""):
+    print("Running process with original bounds")
+    bound_divide = 2
+    df = nearby_df(r=r, eta=eta, n=n, r_bound=r_bound, eta_bound=eta_bound, grid_amt = grid_amt, iterations= iterations, rounded=rounded)
+    plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title)
+    pass_pct = len(df[df["pvalue"] >= accept_pval])/len(df)
+    if pass_pct < good_pct:
+        print(f"Only {pass_pct*100}% of tests passed with the original bounds. Now running with lower r and eta bounds")
+        while pass_pct < good_pct:
+            r_bound = r_bound/bound_divide
+            eta_bound = eta_bound/bound_divide
+            if bound_divide == 2:
+                bound_divide = 5
+            elif bound_divide == 5:
+                bound_divide = 2
+            print(f"Trying r_bound = {r_bound}, eta_bound = {r_bound}")
+            df = nearby_df(r=r, eta=eta, n=n, r_bound=r_bound, eta_bound=eta_bound, grid_amt = grid_amt, iterations= iterations, rounded=rounded)
+            pass_pct = len(df[df["pvalue"] >= accept_pval])/len(df)
+            if pass_pct < good_pct:
+                print(f"Only {pass_pct*100}% of tests passed using r_bound = {r_bound}, eta_bound = {eta_bound}.Now running with lower r and eta bounds")
+            else:
+                print(f"{pass_pct*100}% of tests passed using r_bound = {r_bound}, eta_bound = {eta_bound}. Showing Heatmaps")
+                plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title)
+    else:
+        print(f"{pass_pct*100}% of tests passed with the original bounds.")
+        
