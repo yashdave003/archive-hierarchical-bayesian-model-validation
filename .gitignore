@@ -20,3 +20,5 @@ testing-framework/batch0-agriVision-red-fourier/group_cdf_df_dict_full.pickle
 testing-framework/batch0-agriVision-red-fourier/group_cdf_df_dict_initial.pickle
 .DS_Store
 .vscode/settings.json
+testing-framework/batch1-agriVision-red-fourier/group_cdf_df_dict_initial.pickle
+testing-framework/batch1-agriVision-red-fourier/group_cdf_df_dict_full.pickle
