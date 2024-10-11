@@ -553,7 +553,7 @@ def KSHeatMap(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterat
     plotKSHeatMap(df=df, r=r, eta=eta, grid_amt=grid_amt, pval=pval, dist =  dist, title = title)
 
 
-def KSHeatMapFullProcess(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 4, accept_pval = 0.05, good_pct = 0.8, title= "", return_vals = False, print_messages = True):
+def KSHeatMapFullProcess(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 4, accept_pval = 0.05, good_pct = 0.8, title= "", return_vals = False, print_messages = True, max_iterations = 6):
     if print_messages:
         print("Running process with original bounds")
     bound_divide = 2
@@ -566,7 +566,7 @@ def KSHeatMapFullProcess(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt
     if pass_pct < good_pct:
         if print_messages:
             print(f"Only {pass_pct*100}% of tests passed with the original bounds. Now running with lower r and eta bounds")
-        while pass_pct < good_pct:
+        while pass_pct < good_pct and max_iterations>0:
             r_bound = r_bound/bound_divide
             eta_bound = eta_bound/bound_divide
             if bound_divide == 2:
@@ -583,7 +583,9 @@ def KSHeatMapFullProcess(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt
             else:
                 if print_messages:
                     print(f"{pass_pct*100}% of tests passed using r_bound = {r_bound}, eta_bound = {eta_bound}. Showing Heatmaps")
-                final_fig = plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title)
+                
+            max_iterations -= 1
+        final_fig = plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title)
     else:
         if print_messages:
             print(f"{pass_pct*100}% of tests passed with the original bounds.")
