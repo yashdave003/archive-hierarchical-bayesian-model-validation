@@ -6,7 +6,7 @@ import git
 def get_plot(plots_path, case_study_path, filename):
     return os.path.join(str(plots_path.relative_to(case_study_path)), filename)
 
-def create_image_grid(plots_path, case_study_path, plot_name, layers, cols=2, plot_type="grid", img_width="60%"):
+def create_image_grid(plots_path, case_study_path, plot_name, layers, cols=2, plot_type="grid", img_width="80%"):
     rows = -(-len(layers) // cols)  # Ceiling division
     grid = f"<table style='width: 100%;'>\n"
     for i in range(rows):
@@ -30,7 +30,6 @@ def generate_html_report(dataset_name):
     base_path = Path(git.Repo('.', search_parent_directories=True).working_tree_dir)
     case_study_path = Path(os.path.join(base_path, "results", "case-studies", dataset_name))
     wavelet_path = Path(os.path.join(case_study_path, "wavelet", "approx1e5", "gray"))
-    cdf_path = Path(os.path.join(wavelet_path, "CDFs"))
     csv_path = Path(os.path.join(wavelet_path, "CSVs"))
     plots_path = Path(os.path.join(wavelet_path, "plots"))
 
