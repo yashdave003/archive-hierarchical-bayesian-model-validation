@@ -18,10 +18,17 @@ from time import sleep
 from tqdm import tqdm
 
 
-def convert_to_wavelet_basis(folder_dir, color, basis="db1", image_func = None, debug = False):
+def rgb2gray(rgb):
+    # Based on luminance perception of human vision. This is usually what is going on under the hood.
+    return rgb.dot([0.2989, 0.5870, 0.1140])
+
+def convert_to_wavelet_basis(folder_dir, color, basis="db1", image_func = None, debug = False, npy = False):
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     #Setup df Dict
-    image = Image.open(file_list[0]).convert('L')
+    if npy:
+        image = rgb2gray(np.load(file_list[0]))
+    else:
+        image = Image.open(file_list[0]).convert('L')
     first_image = pywt.wavedec2(image, basis)
     layer_len = len(first_image)
     print(str(layer_len) + " layers being used")
@@ -40,10 +47,16 @@ def convert_to_wavelet_basis(folder_dir, color, basis="db1", image_func = None, 
         loop = range(len(file_list))
     for k in loop:
         if c >= 3:
-            image = np.array(Image.open(file_list[k]).convert('L'))
+            if npy:
+                image = rgb2gray(np.load(file_list[k]))
+            else:
+                image = Image.open(file_list[k]).convert('L')
     
         else:
-            image = np.array(Image.open(file_list[k]))[:,:,c]
+            if npy:
+                image = np.load(file_list[k])[:,:,c]
+            else:
+                image = np.array(Image.open(file_list[k]))[:,:,c]
 
         if image_func != None:
             image = image_func(image)
@@ -94,9 +107,12 @@ def getIndexDF(image, no_zero =False):
         coord_df = coord_df[(coord_df["x_freq"] != 0 )| (coord_df["y_freq"] != 0)]
     return coord_df
 
-def convert_fourier_list(folder_dir, c, coord_df = None, debug = False):
+def convert_fourier_list(folder_dir, c, coord_df = None, debug = False, npy = False):
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
-    image = np.array(Image.open(file_list[0]).convert('L'))
+    if npy:
+        image = rgb2gray(np.load(file_list[0]))
+    else:
+        image = Image.open(file_list[0]).convert('L')
     if coord_df is None:
         coord_df = getIndexDF(image, no_zero =False).sort_values(["magnitude"])
     x = coord_df["x_index"].to_numpy()
@@ -110,9 +126,16 @@ def convert_fourier_list(folder_dir, c, coord_df = None, debug = False):
         loop = range(len(file_list))
     for k in loop:
         if c >= 3:
-            image = np.array(Image.open(file_list[k]).convert('L'))
+            if npy:
+                image = rgb2gray(np.load(file_list[k]))
+            else:
+                image = Image.open(file_list[k]).convert('L')
         else:
-            image = np.array(Image.open(file_list[k]))[:,:,c]
+            if npy:
+                image = np.load(file_list[k])[:,:,c]
+            else:
+                image = np.array(Image.open(file_list[k]))[:,:,c]
+
         transformed = np.array(fft.fft2(image))
         freq_arr[k] = transformed[tuple(x), tuple(y)]
         mag_arr[k] = magnitudes
@@ -145,10 +168,10 @@ def recursive_split(freqs, mags, threshold =0.05, max_depth = 5, presplit = 0):
 
 
 
-def convert_to_fourier_basis(folder_dir, color, threshold =0.05, max_depth = 5, presplit = 0, combine_complex = True, split_list = None, coord_df = None, debug = False):
+def convert_to_fourier_basis(folder_dir, color, threshold =0.05, max_depth = 5, presplit = 0, combine_complex = True, split_list = None, coord_df = None, debug = False, npy = False):
     color_dict = {"red":0, "green":1, "blue":2, "gray":3, "infrared": 4}
     c = color_dict[color]
-    freqs, mags = convert_fourier_list(folder_dir, c, coord_df = coord_df, debug = debug)
+    freqs, mags = convert_fourier_list(folder_dir, c, coord_df = coord_df, debug = debug, npy = npy)
     df = pd.DataFrame(columns=["band", "channel", "magnitude_endpoints","unique_magnitudes", "data"])
 
     if split_list == None:
@@ -268,9 +291,12 @@ def convert_to_fourier_basis_3d(folder_dir, threshold =0.05, max_depth = 5, pres
     return df
 
 
-def uniqueMags(folder_dir, start = None, end = None, dim="2d", coord_df =None):
+def uniqueMags(folder_dir, start = None, end = None, dim="2d", coord_df =None, npy = False):
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
-    image = np.array(Image.open(file_list[0]).convert('L'))
+    if npy:
+        image = rgb2gray(np.load(file_list[0]))
+    else:
+        image = Image.open(file_list[0]).convert('L')
     if coord_df == None:
         if dim == "2d":
             coord_df = getIndexDF(image, no_zero =False).sort_values(["magnitude"])
@@ -344,11 +370,14 @@ def convert_to_wavelet_basis_3d(folder_dir, basis="db1", image_func = None, debu
     
     return new_df
 
-def fourier_full_decomp(folder_dir, color, coord_df= None, debug = False):
+def fourier_full_decomp(folder_dir, color, coord_df= None, debug = False, npy = False):
     color_dict = {"red":0, "green":1, "blue":2, "gray":3, "infrared": 4}
     c = color_dict[color]
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
-    image = np.array(Image.open(file_list[0]).convert('L'))
+    if npy:
+        image = rgb2gray(np.load(file_list[0]))
+    else:
+        image = Image.open(file_list[0]).convert('L')
 
     if coord_df is None:
         coord_df = getIndexDF(image, no_zero =False).sort_values(["magnitude"])
@@ -363,9 +392,15 @@ def fourier_full_decomp(folder_dir, color, coord_df= None, debug = False):
         loop = range(len(file_list))
     for k in debug:
         if c >= 3:
-            image = np.array(Image.open(file_list[k]).convert('L'))
+            if npy:
+                image = rgb2gray(np.load(file_list[k]))
+            else:
+                image = Image.open(file_list[k]).convert('L')
         else:
-            image = np.array(Image.open(file_list[k]))[:,:,c]
+            if npy:
+                image = np.load(file_list[k])[:,:,c]
+            else:
+                image = np.array(Image.open(file_list[k]))[:,:,c]
         transformed = np.array(fft.fft2(image))
         freq_arr[k] = transformed[tuple(x), tuple(y)]
     coord_df["Data"]  = list(np.array(freq_arr).T)
