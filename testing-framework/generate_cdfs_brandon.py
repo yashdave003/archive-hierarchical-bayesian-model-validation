@@ -1,13 +1,16 @@
 from logging import raiseExceptions
 from signal import raise_signal
 import os
-BRANDON = '/Users/brandonmarks/Desktop/Research Materials/hierarchical-bayesian-model-validation/'
-YASH = '/Users/yashd/Desktop/hierarchical-bayesian-model-validation/'
+import git
+from pathlib import Path
+import os
+ROOT_DIR = Path(git.Repo('.', search_parent_directories=True).working_tree_dir)
 
-ROOT_DIR = BRANDON
-os.chdir(ROOT_DIR + 'testing-framework/')
-
-from utilities import *
+os.chdir(os.path.join(ROOT_DIR, "utilities"))
+print("PRINT RESULT:")
+print(os.getcwd())
+from testing import *
+os.chdir(os.path.join(ROOT_DIR, "results"))
 
 def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail_bound = 0.01, tail_percent = 0.1, use_matlab=False, eng=None, enforce_assert=True, return_assert = False, debug=False):
 
@@ -59,8 +62,8 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
     if debug:
         print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
-all_eta = np.arange(50, 101, 1)
-all_r = np.append(np.arange(0.1, 10, 0.1), np.arange(10, 100, 1))
+all_eta = np.arange(-1.5, 0, .1)
+all_r = np.append(np.arange(0.02, 2, 0.01), np.arange(2, 10, .1))
 n_samples = 2000
 tail_percent = 0.1
 tail_bound = 1e-5
