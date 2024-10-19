@@ -52,7 +52,6 @@ def combo_test_plot(df, cols, extra_boundary = 0.5, plot_name = '', target_var =
     else:
         plt.title(f"{', '.join([col[5:].capitalize() for col in cols])} with boundary {extra_boundary}")
     plt.show()
-    print("Lowest eta value:", eta_vals[0])
     return fig
 
 def create_scatter_plot(df, metric=None):
