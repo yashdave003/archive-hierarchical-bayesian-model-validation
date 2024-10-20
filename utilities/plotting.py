@@ -500,8 +500,8 @@ def multiSampleComparisonPlots(samps,  samp_names, bw =0.2):
 
 
 
-def nearby_df(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, rounded = 3):
-    prior_cdf = compute_prior_cdf(r, eta, n_samples= 1000, tail_percent=.1, tail_bound= 0.0001, debug = False, use_matlab=True, eng = eng)
+def nearby_df(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, rounded = 3):
+    prior_cdf = compute_prior_cdf(r, eta, n_samples= 1000, tail_percent=.1, tail_bound= 0.0001, debug = True, use_matlab=True, eng = eng)
     check_r = np.linspace(r-r_bound, r+r_bound, 2*grid_amt+1)
 
     check_eta = np.linspace(eta-eta_bound, eta+eta_bound, 2*grid_amt+1)
@@ -513,8 +513,9 @@ def nearby_df(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterat
             r_prime = np.round(r_prime, rounded)
             eta_prime = np.round(eta_prime, rounded)
             for _ in range(iterations):
-                obs_x = sample_prior(r_prime, eta_prime, size = n)
-                distance, pvalue = kstest_custom(obs_x, prior_cdf)
+                obs_x = sample_prior(r_prime, eta_prime, size = min(n, ks_max))
+                distance, _ = kstest_custom(obs_x, prior_cdf)
+                pvalue = 1 - stats.kstwo(n=n).cdf(distance)
                 total_distance += distance
                 total_pvalue += pvalue
             
@@ -547,16 +548,16 @@ def plotKSHeatMap(df, r, eta, grid_amt= 5, pval =True, dist = True, title = "", 
             plt.show()
     return [fig_dist, fig_pval]
 
-def KSHeatMap(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, rounded = 3, pval =True, dist = True, title = ""):
-    df = nearby_df(r, eta, iterations=iterations, n=n, r_bound = r_bound, eta_bound = eta_bound, grid_amt=grid_amt, rounded=rounded)
+def KSHeatMap(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, rounded = 3, pval =True, dist = True, title = ""):
+    df = nearby_df(r, eta, iterations=iterations, n=n, ks_max = ks_max, r_bound = r_bound, eta_bound = eta_bound, grid_amt=grid_amt, rounded=rounded)
     plotKSHeatMap(df=df, r=r, eta=eta, grid_amt=grid_amt, pval=pval, dist =  dist, title = title)
 
 
-def KSHeatMapFullProcess(r, eta, n=10000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 4, accept_pval = 0.05, good_pct = 0.8, title= "", return_vals = False, print_messages = True, max_iterations = 6):
+def KSHeatMapFullProcess(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 4, accept_pval = 0.05, good_pct = 0.8, title= "", return_vals = False, print_messages = True, max_iterations = 6):
     if print_messages:
         print("Running process with original bounds")
     bound_divide = 2
-    df = nearby_df(r=r, eta=eta, n=n, r_bound=r_bound, eta_bound=eta_bound, grid_amt = grid_amt, iterations= iterations, rounded=rounded)
+    df = nearby_df(r=r, eta=eta, n=n, ks_max = ks_max, r_bound=r_bound, eta_bound=eta_bound, grid_amt = grid_amt, iterations= iterations, rounded=rounded)
     intial_fig = plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title)
     pass_pct = len(df[df["pvalue"] >= accept_pval])/len(df)
     initial_pct = pass_pct
