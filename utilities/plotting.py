@@ -8,7 +8,7 @@ GROUP_NAME = 'Group (Layer/Band)'
 def get_random_color():
     return np.random.choice(list(mcolors.CSS4_COLORS.values()))
 
-def combo_test_plot(df, cols, extra_boundary = 0.5, plot_name = '', target_var = None):
+def combo_test_plot(df, cols, extra_boundary = 0.5, plot_name = '', target_var = None, best_param=None):
     cols = sorted(cols)
     df = df.copy() 
     for col in cols:
@@ -45,6 +45,8 @@ def combo_test_plot(df, cols, extra_boundary = 0.5, plot_name = '', target_var =
             r_vals.append(r)
             eta_vals.append(eta)
         sns.lineplot(x=r_vals, y=eta_vals, label=f'target_var:{np.round(target_var, 4)}', ax=ax)
+    if best_param is not None:
+        sns.scatterplot(x = [best_param[0]], y = [best_param[1]], marker='*', s = 100, c = 'xkcd:electric pink', ax=ax, label = f'Best: {best_param}')
 
     plt.legend(loc = 'lower right')
     if plot_name:
