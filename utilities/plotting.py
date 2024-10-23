@@ -503,7 +503,7 @@ def multiSampleComparisonPlots(samps,  samp_names, bw =0.2):
 
 
 def nearby_df(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, rounded = 3):
-    prior_cdf = compute_prior_cdf(r, eta, n_samples= 1000, tail_percent=.1, tail_bound= 0.0001, debug = True, use_matlab=True, eng = eng)
+    prior_cdf = compute_prior_cdf(r, eta, n_samples= 1000, tail_percent=.1, tail_bound= 0.0001, debug = False, use_matlab=True, eng = eng)
     check_r = np.linspace(r-r_bound, r+r_bound, 2*grid_amt+1)
 
     check_eta = np.linspace(eta-eta_bound, eta+eta_bound, 2*grid_amt+1)
