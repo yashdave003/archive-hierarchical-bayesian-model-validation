@@ -26,3 +26,4 @@ results/case-studies/pastis/wavelet/approx1e5/gray/cache/group_cdf_df_dict_full.
 results/case-studies/pastis/wavelet/approx1e5/gray/cache/group_cdf_df_dict_full.pickle
 results/case-studies/pastis/wavelet/approx1e5/gray/cache/group_cdf_df_dict_initial.pickle
 .vscode/settings.json
+results/case-studies/spaceNet/fourier/approx1e5/red/cache/group_cdf_df_dict_full.pickle

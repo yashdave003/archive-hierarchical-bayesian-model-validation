@@ -74,8 +74,8 @@ def generate_markdown_report(data_name):
 
     # Define plot pairs
     combo_plot_pairs = [
-        ("full_grid_search_combo_plot_layer.jpg", "Full Grid Search"),
-        ("optimized_full_grid_search_combo_plot_layer.jpg", "Fine Grid Search")
+        ("full_grid_search_combo_plot_layer{}.jpg", "Full Grid Search"),
+        ("optimized_full_grid_search_combo_plot_layer{}.jpg", "Fine Grid Search")
     ]
 
     markdown_content = f"""# {dataset_name.upper()} Dataset ({representation.capitalize()}) - {pd.Timestamp.now().strftime('%Y-%m-%d')}

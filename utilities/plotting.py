@@ -34,19 +34,21 @@ def combo_test_plot(df, cols, extra_boundary = 0.5, plot_name = '', target_var =
         if m not in fixed_palette:
             fixed_palette[m] = get_random_color()
     fig, ax = plt.subplots()
-    fig = sns.scatterplot(df, x='r', y='eta', hue='map', palette = fixed_palette, ax=ax, alpha=0.5, edgecolor='none', s=40)
+    fig = sns.scatterplot(df, x='r', y='eta', hue='map', palette = fixed_palette, ax=ax, alpha=1, edgecolor='none')
     r_vals = []
     eta_vals = []
     if target_var:
         for r in np.linspace(0.1, df['r'].max() if df.shape[0] > 0 else 100, 1000):
             eta = find_eta_for_target_mean(r, target_var)
-            if eta > df['eta'].max():
+            if eta < df['eta'].min():
+                continue
+            if (eta > df['eta'].max()):
                 break
             r_vals.append(r)
             eta_vals.append(eta)
         sns.lineplot(x=r_vals, y=eta_vals, label=f'target_var:{np.round(target_var, 4)}', ax=ax)
     if best_param is not None:
-        sns.scatterplot(x = [best_param[0]], y = [best_param[1]], marker='*', s = 100, c = 'xkcd:electric pink', ax=ax, label = f'Best: {best_param}')
+        sns.scatterplot(x = [best_param[0]], y = [best_param[1]], marker='*', s = 60, c = 'xkcd:electric pink', ax=ax, label = f'Best: {best_param}', edgecolor='none')
 
     plt.legend(loc = 'lower right')
     if plot_name:
