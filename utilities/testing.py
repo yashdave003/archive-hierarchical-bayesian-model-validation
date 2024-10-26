@@ -826,9 +826,9 @@ def kurtosis_prior(r, eta, fisher=True):
     else:
         return kurtosis 
     
-def bootstrap_metric(x, metric=None, n_bootstrap=10000, bootstrap_size = 10000, ci=0.95, replace=True):
+def bootstrap_metric(x, metric=None, n_bootstrap=1000, bootstrap_size = 10000, ci=0.99, replace=True):
     metric_values = []
-    for _ in range(n_bootstrap):
+    for _ in tqdm(range(n_bootstrap)):
         resampled = np.random.choice(x, size=bootstrap_size, replace=replace)
         metric_values.append(metric(resampled))
         

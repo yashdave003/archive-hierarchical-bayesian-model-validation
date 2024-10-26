@@ -34,7 +34,7 @@ def combo_test_plot(df, cols, extra_boundary = 0.5, plot_name = '', target_var =
         if m not in fixed_palette:
             fixed_palette[m] = get_random_color()
     fig, ax = plt.subplots()
-    fig = sns.scatterplot(df, x='r', y='eta', hue='map', palette = fixed_palette, ax=ax, alpha=0.8)
+    fig = sns.scatterplot(df, x='r', y='eta', hue='map', palette = fixed_palette, ax=ax, alpha=0.5, edgecolor='none', s=40)
     r_vals = []
     eta_vals = []
     if target_var:
@@ -86,7 +86,7 @@ def create_scatter_plot(df, metric=None):
 
         ax.set_title(f'(r, eta) pairs colored by {metric}')
     else:
-        sns.scatterplot(x=df['r'], y=df['eta'], color='xkcd:shamrock green', alpha=1, ax=ax)
+        sns.scatterplot(x=df['r'], y=df['eta'], color='xkcd:shamrock green', alpha=0.5, ax=ax, edgecolor='none')
         ax.set_title('(r, eta) pairs for which CDFs are computed (Linear eta)')
 
     ax.set_xlabel('r')
@@ -109,7 +109,7 @@ def create_scatter_plots(df, metric1, metric2):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
     # Plot 1 (Linear eta, colored by metric1)
-    scatter1 = ax1.scatter(df['r'], df['eta'], c=df[metric1], cmap='viridis', alpha=0.6)
+    scatter1 = ax1.scatter(df['r'], df['eta'], c=df[metric1], cmap='viridis', alpha=0.6, edgecolor='none')
     plt.grid(True)
     ax1.set_xlabel('r')
     ax1.set_ylabel('eta')
@@ -119,7 +119,7 @@ def create_scatter_plots(df, metric1, metric2):
     
 
     # Plot 2 (Linear eta, colored by metric2)
-    scatter2 = ax2.scatter(df['r'], df['eta'], c=df[metric2], cmap='viridis', alpha=0.6)
+    scatter2 = ax2.scatter(df['r'], df['eta'], c=df[metric2], cmap='viridis', alpha=0.6, edgecolor='none')
     plt.grid(True)
     ax2.set_xlabel('r')
     ax2.set_ylabel('eta')
@@ -146,7 +146,7 @@ def create_scatter_plots_log_eta(df, metric=None):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
         
         # Plot 1 (Linear eta)
-        scatter1 = ax1.scatter(df['r'], df['eta'], c=df[metric], cmap='viridis', alpha=0.8)
+        scatter1 = ax1.scatter(df['r'], df['eta'], c=df[metric], cmap='viridis', alpha=0.8, edgecolor='none')
         ax1.set_xlabel('r')
         ax1.set_ylabel('eta')
         ax1.set_title('(r, eta) pairs colored by {}'.format(metric))
@@ -156,7 +156,7 @@ def create_scatter_plots_log_eta(df, metric=None):
         
         # Plot 2 (Geometric eta)
         mask = df['eta'].isin(10**np.arange(-9.0, 0))
-        scatter2 = ax2.scatter(df[mask]['r'], np.log10(df[mask]['eta']), c=df[mask][metric], cmap='viridis', alpha=0.8)
+        scatter2 = ax2.scatter(df[mask]['r'], np.log10(df[mask]['eta']), c=df[mask][metric], cmap='viridis', alpha=0.8, edgecolor='none')
         ax2.set_xlabel('r')
         ax2.set_ylabel('eta')
         ax2.set_title('(r, eta) pairs colored by {} (Geometric eta)'.format(metric))
@@ -173,14 +173,14 @@ def create_scatter_plots_log_eta(df, metric=None):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
         # Plot 1 (Linear eta)
-        sns.scatterplot(x=df['r'], y=df['eta'], color='xkcd:shamrock green', alpha=0.4, ax=ax1)
+        sns.scatterplot(x=df['r'], y=df['eta'], color='xkcd:shamrock green', alpha=0.5, ax=ax1)
         ax1.set_xlabel('r')
         ax1.set_ylabel('eta')
         ax1.set_title('(r, eta) pairs for which CDFs are computed (Linear eta)')
 
         # Plot 2 (Geometric eta)
         mask = df['eta'].isin(10**np.arange(-9.0, 0))
-        sns.scatterplot(x=df['r'], y=np.log10(df[mask]['eta']), color='xkcd:shamrock green', alpha=0.4, ax=ax2)
+        sns.scatterplot(x=df['r'], y=np.log10(df[mask]['eta']), color='xkcd:shamrock green', alpha=0.5, ax=ax2, edgecolor='none')
         ax2.set_xlabel('r')
         ax2.set_ylabel(f'log10 eta')
         ax2.set_title('(r, eta) pairs for which CDFs are computed (Geometric eta)')
