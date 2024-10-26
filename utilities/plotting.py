@@ -515,8 +515,9 @@ def nearby_df(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bound =0.1, gr
             r_prime = np.round(r_prime, rounded)
             eta_prime = np.round(eta_prime, rounded)
             for _ in range(iterations):
-                obs_x = sample_prior(r_prime, eta_prime, size = min(n, ks_max))
-                distance, _ = kstest_custom(obs_x, prior_cdf)
+                obs_x = sample_prior(r_prime, eta_prime, size = n)
+                filtered_x = np.sort(obs_x)[np.round(np.linspace(0, obs_x.size - 1, min(obs_x.size, ks_max))).astype(int)] 
+                distance, _ = kstest_custom(filtered_x, prior_cdf)
                 pvalue = 1 - stats.kstwo(n=n).cdf(distance)
                 total_distance += distance
                 total_pvalue += pvalue
@@ -560,7 +561,7 @@ def KSHeatMapFullProcess(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bou
         print("Running process with original bounds")
     bound_divide = 2
     df = nearby_df(r=r, eta=eta, n=n, ks_max = ks_max, r_bound=r_bound, eta_bound=eta_bound, grid_amt = grid_amt, iterations= iterations, rounded=rounded)
-    intial_fig = plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title)
+    intial_fig = plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title + " Original Bounds")
     pass_pct = len(df[df["pvalue"] >= accept_pval])/len(df)
     initial_pct = pass_pct
     initial_r_bound = r_bound
@@ -577,7 +578,7 @@ def KSHeatMapFullProcess(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bou
                 bound_divide = 2
             if print_messages:
                 print(f"Trying r_bound = {r_bound}, eta_bound = {r_bound}")
-            df = nearby_df(r=r, eta=eta, n=n, r_bound=r_bound, eta_bound=eta_bound, grid_amt = grid_amt, iterations= iterations, rounded=rounded)
+            df = nearby_df(r=r, eta=eta, n=n, ks_max = ks_max, r_bound=r_bound, eta_bound=eta_bound, grid_amt = grid_amt, iterations= iterations, rounded=rounded)
             pass_pct = len(df[df["pvalue"] >= accept_pval])/len(df)
             if pass_pct < good_pct:
                 if print_messages:
@@ -587,7 +588,7 @@ def KSHeatMapFullProcess(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bou
                     print(f"{pass_pct*100}% of tests passed using r_bound = {r_bound}, eta_bound = {eta_bound}. Showing Heatmaps")
                 
             max_iterations -= 1
-        final_fig = plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title)
+        final_fig = plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title+ " Final Bounds")
     else:
         if print_messages:
             print(f"{pass_pct*100}% of tests passed with the original bounds.")
