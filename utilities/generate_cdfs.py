@@ -61,9 +61,9 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
     if debug:
         print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
-all_eta = np.arange(-1.4, 0, .1)
+all_eta = np.arange(-1, 0, .1)
 all_r = np.append(np.arange(0.02, 2, 0.01), np.arange(2, 10.1, .1))
-n_samples = 2000
+n_samples = 1000
 tail_percent = 0.1
 tail_bound = 1e-5
 
