@@ -1,4 +1,4 @@
-# PASTIS Dataset (Wavelet) - 2024-10-24
+# PASTIS Dataset (Wavelet) - 2024-10-26
 ## Dataset Description
 * **Original source:** [Add source information here]
 * **Sizes:** [Add size information here]
@@ -23,11 +23,11 @@
     <p style="font-weight: bold;">Layer 2</p>
     <div style="display: flex; gap: 10px;">
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer.jpg" alt="Full Grid Search Layer 2" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer2.jpg" alt="Full Grid Search Layer 2" style="width: 80%;">
         <p>Full Grid Search</p>
       </div>
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer.jpg" alt="Fine Grid Search Layer 2" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer2.jpg" alt="Fine Grid Search Layer 2" style="width: 80%;">
         <p>Fine Grid Search</p>
       </div>
     </div>
@@ -39,11 +39,11 @@
     <p style="font-weight: bold;">Layer 3</p>
     <div style="display: flex; gap: 10px;">
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer.jpg" alt="Full Grid Search Layer 3" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer3.jpg" alt="Full Grid Search Layer 3" style="width: 80%;">
         <p>Full Grid Search</p>
       </div>
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer.jpg" alt="Fine Grid Search Layer 3" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer3.jpg" alt="Fine Grid Search Layer 3" style="width: 80%;">
         <p>Fine Grid Search</p>
       </div>
     </div>
@@ -55,11 +55,11 @@
     <p style="font-weight: bold;">Layer 4</p>
     <div style="display: flex; gap: 10px;">
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer.jpg" alt="Full Grid Search Layer 4" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer4.jpg" alt="Full Grid Search Layer 4" style="width: 80%;">
         <p>Full Grid Search</p>
       </div>
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer.jpg" alt="Fine Grid Search Layer 4" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer4.jpg" alt="Fine Grid Search Layer 4" style="width: 80%;">
         <p>Fine Grid Search</p>
       </div>
     </div>
@@ -71,11 +71,11 @@
     <p style="font-weight: bold;">Layer 5</p>
     <div style="display: flex; gap: 10px;">
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer.jpg" alt="Full Grid Search Layer 5" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer5.jpg" alt="Full Grid Search Layer 5" style="width: 80%;">
         <p>Full Grid Search</p>
       </div>
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer.jpg" alt="Fine Grid Search Layer 5" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer5.jpg" alt="Fine Grid Search Layer 5" style="width: 80%;">
         <p>Fine Grid Search</p>
       </div>
     </div>
@@ -87,11 +87,11 @@
     <p style="font-weight: bold;">Layer 6</p>
     <div style="display: flex; gap: 10px;">
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer.jpg" alt="Full Grid Search Layer 6" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer6.jpg" alt="Full Grid Search Layer 6" style="width: 80%;">
         <p>Full Grid Search</p>
       </div>
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer.jpg" alt="Fine Grid Search Layer 6" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer6.jpg" alt="Fine Grid Search Layer 6" style="width: 80%;">
         <p>Fine Grid Search</p>
       </div>
     </div>
@@ -103,11 +103,11 @@
     <p style="font-weight: bold;">Layer 7</p>
     <div style="display: flex; gap: 10px;">
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer.jpg" alt="Full Grid Search Layer 7" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer7.jpg" alt="Full Grid Search Layer 7" style="width: 80%;">
         <p>Full Grid Search</p>
       </div>
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer.jpg" alt="Fine Grid Search Layer 7" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer7.jpg" alt="Fine Grid Search Layer 7" style="width: 80%;">
         <p>Fine Grid Search</p>
       </div>
     </div>
@@ -119,11 +119,11 @@
     <p style="font-weight: bold;">Layer 8</p>
     <div style="display: flex; gap: 10px;">
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer.jpg" alt="Full Grid Search Layer 8" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\full_grid_search_combo_plot_layer8.jpg" alt="Full Grid Search Layer 8" style="width: 80%;">
         <p>Full Grid Search</p>
       </div>
       <div>
-        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer.jpg" alt="Fine Grid Search Layer 8" style="width: 80%;">
+        <img src="..\case-studies\pastis\wavelet\approx1e5\gray\plots\optimized_full_grid_search_combo_plot_layer8.jpg" alt="Fine Grid Search Layer 8" style="width: 80%;">
         <p>Fine Grid Search</p>
       </div>
     </div>

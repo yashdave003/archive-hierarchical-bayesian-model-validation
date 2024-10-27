@@ -64,16 +64,29 @@ def create_comparison_grid(plots_paths, identifiers, output_path, groups, plot_p
         grid += '</div>\n\n'
     return grid
 
-def merge_dataframes_with_prefixes(dfs, identifiers):
+def merge_dataframes_with_prefixes(dfs, unique_identifiers):
     """Merge dataframes side by side with prefixed columns based on identifiers."""
-    merged_df = pd.DataFrame(index=dfs[0].index)
-    
-    for df, identifier in zip(dfs, identifiers):
-        prefix = identifier[0].upper() + '_'  # Take first letter of identifier and capitalize
-        for col in df.columns:
-            merged_df[prefix + col] = df[col]
-    
+    merged_df = dfs[0].add_prefix(unique_identifiers[0].capitalize() + '_').copy()
+    for df, identifier in zip(dfs[1:], unique_identifiers[1:]):
+        prefix = identifier.capitalize() + '_'
+        prefixed_df = df.add_prefix(prefix)
+        merged_df = merged_df.merge(prefixed_df, left_index=True, right_index=True, how='outer')
     return merged_df
+
+
+def generate_comparison_name(data_names):
+    parts = [name.split('-') for name in data_names]
+    comparison_name = []
+    unique_id = ''
+    for i in range(len(parts[0])):
+        elements = set(part[i] for part in parts)
+        if len(elements) > 1:
+            comparison_name.append(''.join(el.capitalize() for el in elements))
+            unique_id = i
+        else:
+            comparison_name.append(parts[0][i])
+
+    return '-'.join(comparison_name), unique_id
 
 def generate_comparative_markdown_report(data_names):
     """Generate comparative markdown report for multiple datasets."""
@@ -83,28 +96,36 @@ def generate_comparative_markdown_report(data_names):
     representation = first_data[2]
     channel = first_data[3]
     
-    # Get identifiers (the varying part between data_names)
-    identifiers = [name.split('-')[0] for name in data_names]
-    comparison_name = f"{identifiers[0]}VS{'VS'.join(identifiers[1:])}-{dataset_name}-{representation}-{channel}"
+    # Generate comparison name
+    comparison_name, unique_id = generate_comparison_name(data_names)
     
     # Set up paths
     base_path = os.path.join(get_project_root(), "results")
     plots_paths = []
     master_dfs = []
+    sizes = []
+    unique_identifiers = []
     
     for data_name in data_names:
-        identifier = data_name.split('-')[0]
-        plots_path = os.path.join("case-studies", dataset_name, representation, identifier, channel, "plots")
-        csv_path = os.path.join("case-studies", dataset_name, representation, identifier, channel, "CSVs")
+        parts = data_name.split('-')
+        size = parts[0]
+        dataset_name = parts[1]
+        representation = parts[2]
+        channel = parts[3]
+        unique_identifier = data_name.split('-')[unique_id]
+        unique_identifiers.append(unique_identifier)
+        sizes.append(size)
+        plots_path = os.path.join("case-studies", dataset_name, representation, size, channel, "plots")
+        csv_path = os.path.join("case-studies", dataset_name, representation, size, channel, "CSVs")
         plots_paths.append(plots_path)
-        
+
         # Read data
         index_col = 'layer' if representation == 'wavelet' else 'band'
         df = pd.read_csv(os.path.join(base_path, csv_path, "master_df.csv"), index_col=index_col)
         master_dfs.append(df)
     
     # Merge dataframes with prefixes
-    merged_df = merge_dataframes_with_prefixes(master_dfs, identifiers)
+    merged_df = merge_dataframes_with_prefixes(master_dfs, unique_identifiers)
     layers_or_bands = master_dfs[0].index.tolist()
 
     # Define plot pairs
@@ -117,32 +138,32 @@ def generate_comparative_markdown_report(data_names):
 
     markdown_content = f"""# Comparative Analysis: {dataset_name.upper()} Dataset ({representation.capitalize()}) - {pd.Timestamp.now().strftime('%Y-%m-%d')}
 ## Dataset Variations
-* **Variations compared:** {', '.join(identifiers)}
+* **Variations compared:** {', '.join(sizes)}
 * **Image Type:** {channel.capitalize()}
 * **Representation:** {representation.capitalize()}
 
 ## Comparative Results
 
 ### Full Grid Search Combo Plots Comparison
-{create_comparison_grid(plots_paths, identifiers, output_path, layers_or_bands, combo_plot_pairs, cols=1, img_width="80%")}
+{create_comparison_grid(plots_paths, unique_identifiers, output_path, layers_or_bands, combo_plot_pairs, cols=1, img_width="80%")}
 
 ### Compare CDF PDF Plots
-{create_image_grid(plots_paths, identifiers, output_path, "compare_cdf_pdf", layers_or_bands, cols=1, plot_type="compare", img_width="90%")}
+{create_image_grid(plots_paths, unique_identifiers, output_path, "compare_cdf_pdf", layers_or_bands, cols=1, plot_type="compare", img_width="90%")}
 
 ## Comparative Parameter Analysis
 
 ### Best parameters comparison:
-{merged_df[[f'{id[0].upper()}_total_samples' for id in identifiers] +
-           [f'{id[0].upper()}_best_r' for id in identifiers] + 
-           [f'{id[0].upper()}_best_eta' for id in identifiers] +
-           [f'{id[0].upper()}_kstest_stat_best' for id in identifiers]].round(7).to_markdown()}
+{merged_df[[f'{id.capitalize()}_total_samples' for id in unique_identifiers] +
+           [f'{id.capitalize()}_best_r' for id in unique_identifiers] + 
+           [f'{id.capitalize()}_best_eta' for id in unique_identifiers] +
+           [f'{id.capitalize()}_kstest_stat_best' for id in unique_identifiers]].round(7).to_markdown()}
 
 ## Individual Analyses
 """
     # Add individual analyses
-    for identifier, df in zip(identifiers, master_dfs):
+    for unique_identifier, df in zip(unique_identifiers, master_dfs):
         markdown_content += f"""
-### {identifier}
+### {unique_identifier}
 #### Optimization progression:
 {df.filter(regex='.*_r$|.*_eta$|iter.*').round(7).to_markdown()}
 """
