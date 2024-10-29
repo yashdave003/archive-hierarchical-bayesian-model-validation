@@ -153,11 +153,9 @@ def generate_comparative_markdown_report(data_names):
 ## Comparative Parameter Analysis
 
 ### Best parameters comparison:
-{merged_df[[f'{id.capitalize()}_total_samples' for id in unique_identifiers] +
-           [f'{id.capitalize()}_best_r' for id in unique_identifiers] + 
+{merged_df[[f'{id.capitalize()}_best_r' for id in unique_identifiers] + 
            [f'{id.capitalize()}_best_eta' for id in unique_identifiers] +
-           [f'{id.capitalize()}_kstest_stat_best' for id in unique_identifiers]].round(7).to_markdown()}
-
+           [f'{id.capitalize()}_kstest_stat_best' for id in unique_identifiers]].round(7).to_markdown()}           
 ## Individual Analyses
 """
     # Add individual analyses
