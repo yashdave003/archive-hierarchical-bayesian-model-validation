@@ -18,7 +18,10 @@ from time import sleep
 from tqdm import tqdm
 
 def npz_opener(path):
-    return np.load(path)["arr_0"]
+    npz_file = np.load(path)
+    array_data = npz_file[npz_file.files[0]]
+    return array_data
+
     
 def rgb2gray(rgb):
     # Based on luminance perception of human vision. This is usually what is going on under the hood.
