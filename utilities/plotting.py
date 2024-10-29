@@ -342,7 +342,7 @@ def visualize_cdf_pdf(params, sample=[], distro = 'gengamma', log_scale = True, 
         location (float): The location of the maximum deviation between the empirical and computed CDFs.
     """
     if len(sample) > 0:
-        xs = np.linspace(max(-100000, np.min(sample)), min(np.max(sample), 100000), 200000)
+        xs = np.linspace(max(-100000, np.min(sample)), min(np.max(sample), 100000), 2000000)
         sample = np.sort(sample)
         n = len(sample)
     

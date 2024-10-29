@@ -820,7 +820,6 @@ def variance_prior(r, eta, scale=1):
 def kurtosis_prior(r, eta, fisher=True):
     beta = (eta+1.5)/r
     kurtosis = 3*scipy.special.gamma(beta + 2/r)*scipy.special.gamma(beta)/scipy.special.gamma(beta+1/r)**2 
-    # scipy.special.gamma(beta + 2/r)/scipy.special.gamma(beta) / variance_prior(r, eta)**2
     if fisher:
         return kurtosis - 3
     else:
@@ -851,3 +850,20 @@ def find_eta_for_target_mean(r, target_mean):
         return (gen_gamma_mean(r, eta) - target_mean)**2
     result = scipy.optimize.minimize_scalar(objective)
     return result.x
+
+def create_kurt_var_ksstat_df(cdf_dict):
+    cdfs_df = pd.DataFrame({'(r,eta),cdf' : sorted(cdf_dict.items())})
+    cdfs_df['r'] = pd.Series(cdfs_df["(r,eta),cdf"].str[0].str[0])
+    cdfs_df['eta'] = pd.Series(cdfs_df["(r,eta),cdf"].str[0].str[1])
+    cdfs_df['cdf'] = pd.Series(cdfs_df["(r,eta),cdf"].str[1])
+    cdfs_df['variance'] = np.nan_to_num(cdfs_df.apply(lambda row : variance_prior(row.loc['r'], row.loc['eta']), axis = 1))
+    cdfs_df['kurtosis'] = cdfs_df.apply(lambda row : kurtosis_prior(row.loc['r'], row.loc['eta']), axis = 1)
+    return cdfs_df
+
+def add_tests_to_df(cdfs_df, group, var_kurt_df, ksstats):
+    cdfs_df['pass_var'] = (cdfs_df['variance'] > var_kurt_df.loc[group, 'var_lower']) & (cdfs_df['variance'] < var_kurt_df.loc[group, 'var_upper'])
+    cdfs_df['pass_kurt'] = (cdfs_df['kurtosis'] > var_kurt_df.loc[group, 'kurt_lower']) & (cdfs_df['kurtosis'] < var_kurt_df.loc[group,'kurt_upper'])
+    cdfs_df['ksstat'] = ksstats
+    cutoff = stats.kstwo(n=var_kurt_df.loc[group, 'total_samples']).isf(0.05)
+    cdfs_df['pass_kstest'] = cdfs_df['ksstat'].apply(lambda x: True if x < cutoff else False)
+    return cdfs_df
