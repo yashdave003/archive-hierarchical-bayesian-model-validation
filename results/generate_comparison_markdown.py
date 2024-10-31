@@ -3,6 +3,8 @@ import pandas as pd
 from pathlib import Path
 import git
 import argparse
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 def get_project_root():
     return Path(git.Repo('.', search_parent_directories=True).working_tree_dir)
@@ -71,6 +73,7 @@ def merge_dataframes_with_prefixes(dfs, unique_identifiers):
         prefix = identifier.capitalize() + '_'
         prefixed_df = df.add_prefix(prefix)
         merged_df = merged_df.merge(prefixed_df, left_index=True, right_index=True, how='outer')
+    merged_df['total_samples'] = dfs[0]['total_samples']
     return merged_df
 
 
@@ -81,7 +84,8 @@ def generate_comparison_name(data_names):
     for i in range(len(parts[0])):
         elements = set(part[i] for part in parts)
         if len(elements) > 1:
-            comparison_name.append(''.join(el.capitalize() for el in elements))
+            sorted_elements = sorted(list(elements))
+            comparison_name.append(''.join(el.capitalize() for el in sorted_elements))
             unique_id = i
         else:
             comparison_name.append(parts[0][i])
@@ -103,9 +107,10 @@ def generate_comparative_markdown_report(data_names):
     base_path = os.path.join(get_project_root(), "results")
     plots_paths = []
     master_dfs = []
+    summary_dfs = []
     sizes = []
     unique_identifiers = []
-    
+
     for data_name in data_names:
         parts = data_name.split('-')
         size = parts[0]
@@ -119,13 +124,16 @@ def generate_comparative_markdown_report(data_names):
         csv_path = os.path.join("case-studies", dataset_name, representation, size, channel, "CSVs")
         plots_paths.append(plots_path)
 
-        # Read data
         index_col = 'layer' if representation == 'wavelet' else 'band'
         df = pd.read_csv(os.path.join(base_path, csv_path, "master_df.csv"), index_col=index_col)
+        df['identifier'] = unique_identifier
         master_dfs.append(df)
+        subset_df = df.copy()[['best_r', 'best_eta', 'kstest_stat_best', 'identifier']]
+        summary_dfs.append(subset_df)
     
     # Merge dataframes with prefixes
     merged_df = merge_dataframes_with_prefixes(master_dfs, unique_identifiers)
+    summary_df = pd.concat(summary_dfs, axis = 0)
     layers_or_bands = master_dfs[0].index.tolist()
 
     # Define plot pairs
@@ -144,19 +152,19 @@ def generate_comparative_markdown_report(data_names):
 
 ## Comparative Results
 
+### Best parameters comparison:
+{merged_df[['total_samples'] + 
+           [f'{id.capitalize()}_best_r' for id in unique_identifiers] + 
+           [f'{id.capitalize()}_best_eta' for id in unique_identifiers] +
+           [f'{id.capitalize()}_kstest_stat_best' for id in unique_identifiers]].round(6).to_markdown()}  
+           
 ### Full Grid Search Combo Plots Comparison
 {create_comparison_grid(plots_paths, unique_identifiers, output_path, layers_or_bands, combo_plot_pairs, cols=1, img_width="80%")}
 
 ### Compare CDF PDF Plots
 {create_image_grid(plots_paths, unique_identifiers, output_path, "compare_cdf_pdf", layers_or_bands, cols=1, plot_type="compare", img_width="90%")}
 
-## Comparative Parameter Analysis
-
-### Best parameters comparison:
-{merged_df[[f'{id.capitalize()}_best_r' for id in unique_identifiers] + 
-           [f'{id.capitalize()}_best_eta' for id in unique_identifiers] +
-           [f'{id.capitalize()}_kstest_stat_best' for id in unique_identifiers]].round(7).to_markdown()}           
-## Individual Analyses
+### Individual Analyses
 """
     # Add individual analyses
     for unique_identifier, df in zip(unique_identifiers, master_dfs):
@@ -170,6 +178,9 @@ def generate_comparative_markdown_report(data_names):
     os.makedirs(os.path.join(base_path, "draft_reports"), exist_ok=True)
     with open(output_file, 'w') as f:
         f.write(markdown_content)
+    print(os.path.join(base_path, "combined_results", f"{dataset_name}_{''.join(unique_identifiers)}_summary_df.csv"))
+    summary_df.to_csv(os.path.join(base_path, "combined_results", f"{dataset_name}_{representation}_{''.join(unique_identifiers)}_summary_df.csv"))
+
     print(f"Comparative markdown report generated: {output_file}")
 
 if __name__ == "__main__":
