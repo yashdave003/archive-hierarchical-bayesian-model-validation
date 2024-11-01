@@ -2,6 +2,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from testing import *
+from joblib import Parallel, delayed
 
 GROUP_NAME = 'Group (Layer/Band)'
 
@@ -504,37 +505,67 @@ def multiSampleComparisonPlots(samps,  samp_names, bw =0.2):
 
 
 
-def nearby_df(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, rounded = 3):
-    prior_cdf = compute_prior_cdf(r, eta, n_samples= 1000, tail_percent=.1, tail_bound= 0.0001, debug = False, use_matlab=True, eng = eng)
-    check_r = np.linspace(r-r_bound, r+r_bound, 2*grid_amt+1)
+def nearby_df_parallel_process(r_prime, eta_prime, prior_cdf, n, ks_max, iterations, rounded):
+    total_distance, total_pvalue = 0, 0
+    r_prime = np.round(r_prime, rounded)
+    eta_prime = np.round(eta_prime, rounded)
 
-    check_eta = np.linspace(eta-eta_bound, eta+eta_bound, 2*grid_amt+1)
+    for _ in range(iterations):
+        obs_x = sample_prior(r_prime, eta_prime, size=n)
+        filtered_x = np.sort(obs_x)[np.round(np.linspace(0, obs_x.size - 1, min(obs_x.size, ks_max))).astype(int)] 
+        distance, _ = kstest_custom(filtered_x, prior_cdf)
+        pvalue = 1 - stats.kstwo(n=n).cdf(distance)
+        total_distance += distance
+        total_pvalue += pvalue
+    
+    avg_distance = total_distance / iterations
+    avg_pvalue = total_pvalue / iterations
+    
+    return [r_prime, eta_prime, avg_distance, avg_pvalue]
 
-    df = pd.DataFrame(columns = ["r", "eta", "distance", "pvalue"])
-    for r_prime in check_r:
-        for eta_prime in check_eta:
-            total_distance, total_pvalue = 0, 0
-            r_prime = np.round(r_prime, rounded)
-            eta_prime = np.round(eta_prime, rounded)
-            for _ in range(iterations):
-                obs_x = sample_prior(r_prime, eta_prime, size = n)
-                filtered_x = np.sort(obs_x)[np.round(np.linspace(0, obs_x.size - 1, min(obs_x.size, ks_max))).astype(int)] 
-                distance, _ = kstest_custom(filtered_x, prior_cdf)
-                pvalue = 1 - stats.kstwo(n=n).cdf(distance)
-                total_distance += distance
-                total_pvalue += pvalue
-            
-            avg_distance = total_distance/iterations
-            avg_pvalue = total_pvalue/iterations
-            df.loc[len(df)] = [r_prime, eta_prime, avg_distance, avg_pvalue]
+def nearby_df(r, eta, n=10000, ks_max=100000, r_bound=0.01, eta_bound=0.1, grid_amt=5, iterations=10, rounded=3, parallelize = True, prior_cdf = None):
+    if prior_cdf == None:
+        prior_cdf = compute_prior_cdf(r, eta, n_samples=1000, tail_percent=0.1, tail_bound=0.0001, debug=False, use_matlab=True, eng=eng)
+    check_r = np.linspace(r - r_bound, r + r_bound, 2 * grid_amt + 1)
+    check_eta = np.linspace(eta - eta_bound, eta + eta_bound, 2 * grid_amt + 1) 
+    if parallelize:
+        results = Parallel(n_jobs=-1)(delayed(nearby_df_parallel_process)(r_prime, eta_prime, prior_cdf, n, ks_max, iterations, rounded) 
+                                    for r_prime in check_r for eta_prime in check_eta)
+
+        df = pd.DataFrame(results, columns=["r", "eta", "distance", "pvalue"])
+    else:
+        df = pd.DataFrame(columns = ["r", "eta", "distance", "pvalue"])
+        for r_prime in check_r:
+            for eta_prime in check_eta:
+                total_distance, total_pvalue = 0, 0
+                r_prime = np.round(r_prime, rounded)
+                eta_prime = np.round(eta_prime, rounded)
+                for _ in range(iterations):
+                    obs_x = sample_prior(r_prime, eta_prime, size = n)
+                    filtered_x = np.sort(obs_x)[np.round(np.linspace(0, obs_x.size - 1, min(obs_x.size, ks_max))).astype(int)] 
+                    distance, _ = kstest_custom(filtered_x, prior_cdf)
+                    pvalue = 1 - stats.kstwo(n=n).cdf(distance)
+                    total_distance += distance
+                    total_pvalue += pvalue
+                
+                avg_distance = total_distance/iterations
+                avg_pvalue = total_pvalue/iterations
+                df.loc[len(df)] = [r_prime, eta_prime, avg_distance, avg_pvalue]
     return df
 
 
 def plotKSHeatMap(df, r, eta, grid_amt= 5, pval =True, dist = True, title = "", plot_fig = True):
     if dist:
-        fig_dist, ax = plt.subplots(figsize=(1.6*grid_amt, 1.6*grid_amt))
         result = df.pivot(index='eta', columns='r', values='distance').sort_values("eta", ascending=True)
-        sns.heatmap(result, annot=True, fmt=f".3f", ax =ax, square=True)
+        
+        if grid_amt != 1:
+            fig_dist, ax = plt.subplots(figsize=(1.6*grid_amt, 1.6*grid_amt))
+            sns.heatmap(result, annot=True, fmt=f".3f", ax =ax, square=True)
+        else:
+            fig_dist, ax = plt.subplots(figsize=(5, 5))
+            sns.heatmap(result, annot=True, fmt=f".3f", ax =ax, square=True, cbar=False)
+        
+       
         plt.title(f"{title}, r = {r} eta = {eta}, Distances")
         plt.yticks(rotation=0)
         plt.xticks(rotation=0)
@@ -542,9 +573,15 @@ def plotKSHeatMap(df, r, eta, grid_amt= 5, pval =True, dist = True, title = "", 
         if plot_fig:
             plt.show()
     if pval:
-        fig_pval, ax = plt.subplots(figsize=(1.6*grid_amt, 1.6*grid_amt))
         result = df.pivot(index='eta', columns='r', values='pvalue').sort_values("eta", ascending=True)
-        sns.heatmap(result, annot=True, fmt=f".3f", cmap = "RdYlGn", vmin = 0.01, vmax = 0.2, square=True)
+        if grid_amt != 1:
+            fig_pval, ax = plt.subplots(figsize=(1.6*grid_amt, 1.6*grid_amt))
+            sns.heatmap(result, annot=True, fmt=f".3f", cmap = "RdYlGn", vmin = 0.01, vmax = 0.2, square=True)
+        else:
+            fig_pval, ax = plt.subplots(figsize=(5, 5))
+            sns.heatmap(result, annot=True, fmt=f".3f", cmap = "RdYlGn", vmin = 0.01, vmax = 0.2, square=True, cbar=False)
+        
+        
         plt.title(f"{title}, r = {r} eta = {eta}, pvalues")
         plt.yticks(rotation=0)
         plt.xticks(rotation=0)
@@ -557,17 +594,50 @@ def KSHeatMap(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bound =0.1, gr
     df = nearby_df(r, eta, iterations=iterations, n=n, ks_max = ks_max, r_bound = r_bound, eta_bound = eta_bound, grid_amt=grid_amt, rounded=rounded)
     plotKSHeatMap(df=df, r=r, eta=eta, grid_amt=grid_amt, pval=pval, dist =  dist, title = title)
 
+def center_square_check(r, eta, n=10000, ks_max=100000, prior_cdf = None, iterations=10):
+    df = pd.DataFrame(columns = ["r", "eta", "distance", "pvalue"])
+    if prior_cdf == None:
+        prior_cdf = compute_prior_cdf(r, eta, n_samples=1000, tail_percent=0.1, tail_bound=0.0001, debug=False, use_matlab=True, eng=eng)
+    total_distance, total_pvalue = 0, 0
+    for _ in range(iterations):
+        obs_x = sample_prior(r, eta, size = n)
+        filtered_x = np.sort(obs_x)[np.round(np.linspace(0, obs_x.size - 1, min(obs_x.size, ks_max))).astype(int)] 
+        distance, _ = kstest_custom(filtered_x, prior_cdf)
+        pvalue = 1 - stats.kstwo(n=n).cdf(distance)
+        total_distance += distance
+        total_pvalue += pvalue
+    
+    avg_distance = total_distance/iterations
+    avg_pvalue = total_pvalue/iterations
+    df.loc[len(df)] = [r, eta, avg_distance, avg_pvalue]
 
-def KSHeatMapFullProcess(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 4, accept_pval = 0.05, good_pct = 0.8, title= "", return_vals = False, print_messages = True, max_iterations = 6):
+    return df
+
+def KSHeatMapFullProcess(r, eta, n=10000, ks_max = 100000, r_bound=0.01, eta_bound =0.1, grid_amt= 5, iterations = 10, dist = True, pval = True, rounded = 4, accept_pval = 0.05, good_pct = 0.8, title= "", return_vals = False, print_messages = True, max_iterations = 6, parallelize = True):
+    
+    bound_divide = 10
+    prior_cdf = compute_prior_cdf(r, eta, n_samples=1000, tail_percent=0.1, tail_bound=0.0001, debug=False, use_matlab=True, eng=eng)
     if print_messages:
-        print("Running process with original bounds")
-    bound_divide = 2
-    df = nearby_df(r=r, eta=eta, n=n, ks_max = ks_max, r_bound=r_bound, eta_bound=eta_bound, grid_amt = grid_amt, iterations= iterations, rounded=rounded)
+        print("Check Center Square")
+    center_test = center_square_check(r = r, eta = eta, n = n, ks_max = ks_max, iterations = iterations, prior_cdf = prior_cdf)
+    if center_test["pvalue"][0] < accept_pval:
+        if print_messages:
+            print("Center Square Failed No Need to test the rest")
+        print(center_test)
+        failed_figs = plotKSHeatMap(df=center_test, r = r, eta = eta, grid_amt = 1, pval=True, dist = True, title = title + " Failed Center Square")
+        return [failed_figs, failed_figs], [0, 0, 0, None, None, None]
+    else:
+        if print_messages:
+            print("Center Square Passed")
+
+    df = nearby_df(r=r, eta=eta, n=n, ks_max = ks_max, r_bound=r_bound, eta_bound=eta_bound, grid_amt = grid_amt, iterations= iterations, rounded=rounded, parallelize = parallelize, prior_cdf = prior_cdf)
     intial_fig = plotKSHeatMap(df=df, r=r, eta= eta, grid_amt = grid_amt, pval=pval, dist = dist, title = title + " Original Bounds")
     pass_pct = len(df[df["pvalue"] >= accept_pval])/len(df)
     initial_pct = pass_pct
     initial_r_bound = r_bound
     initial_eta_bound = eta_bound
+    if print_messages:
+        print("Running process with original bounds")
     if pass_pct < good_pct:
         if print_messages:
             print(f"Only {pass_pct*100}% of tests passed with the original bounds. Now running with lower r and eta bounds")
