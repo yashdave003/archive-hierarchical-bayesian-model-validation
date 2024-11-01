@@ -171,7 +171,7 @@ def generate_comparative_markdown_report(data_names):
         markdown_content += f"""
 ### {unique_identifier}
 #### Optimization progression:
-{df.filter(regex='.*_r$|.*_eta$|iter.*').round(7).to_markdown()}
+{df.filter(regex='.*_r$|.*_eta$|iter.*|kstest_stat_initial').round(7).to_markdown()}
 """
 
     output_file = os.path.join(base_path, "draft_reports", f"{comparison_name}.md")
