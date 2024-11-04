@@ -9,3 +9,4 @@ matplotlib
 nibabel==5.2.1
 git 
 tabulate
+joblib

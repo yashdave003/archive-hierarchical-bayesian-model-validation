@@ -97,7 +97,7 @@ def generate_comparative_markdown_report(data_names):
     # Parse first data_name to get common components
     first_data = data_names[0].split('-')
     dataset_name = first_data[1]
-    representation = first_data[2]
+    transform = first_data[2]
     channel = first_data[3]
     
     # Generate comparison name
@@ -115,20 +115,25 @@ def generate_comparative_markdown_report(data_names):
         parts = data_name.split('-')
         size = parts[0]
         dataset_name = parts[1]
-        representation = parts[2]
+        transform = parts[2]
         channel = parts[3]
         unique_identifier = data_name.split('-')[unique_id]
         unique_identifiers.append(unique_identifier)
         sizes.append(size)
-        plots_path = os.path.join("case-studies", dataset_name, representation, size, channel, "plots")
-        csv_path = os.path.join("case-studies", dataset_name, representation, size, channel, "CSVs")
+        plots_path = os.path.join("case-studies", dataset_name, transform, size, channel, "plots")
+        csv_path = os.path.join("case-studies", dataset_name, transform, size, channel, "CSVs")
         plots_paths.append(plots_path)
 
-        index_col = 'layer' if representation == 'wavelet' else 'band'
+        index_col = 'layer' if transform == 'wavelet' else 'band'
         df = pd.read_csv(os.path.join(base_path, csv_path, "master_df.csv"), index_col=index_col)
         df['identifier'] = unique_identifier
+        df['size'] = size
+        df['dataset_name'] = dataset_name
+        df['transform'] = transform
+        df['channel'] = channel
+
         master_dfs.append(df)
-        subset_df = df.copy()[['best_r', 'best_eta', 'kstest_stat_best', 'identifier']]
+        subset_df = df.copy()#[['best_r', 'best_eta', 'kstest_stat_best', 'identifier']]
         summary_dfs.append(subset_df)
     
     # Merge dataframes with prefixes
@@ -144,11 +149,11 @@ def generate_comparative_markdown_report(data_names):
 
     output_path = os.path.join(base_path)
 
-    markdown_content = f"""# Comparative Analysis: {dataset_name.upper()} Dataset ({representation.capitalize()}) - {pd.Timestamp.now().strftime('%Y-%m-%d')}
+    markdown_content = f"""# Comparative Analysis: {dataset_name.upper()} Dataset ({transform.capitalize()}) - {pd.Timestamp.now().strftime('%Y-%m-%d')}
 ## Dataset Variations
 * **Variations compared:** {', '.join(sizes)}
 * **Image Type:** {channel.capitalize()}
-* **Representation:** {representation.capitalize()}
+* **Representation:** {transform.capitalize()}
 
 ## Comparative Results
 
@@ -179,7 +184,7 @@ def generate_comparative_markdown_report(data_names):
     with open(output_file, 'w') as f:
         f.write(markdown_content)
     print(os.path.join(base_path, "combined_results", f"{dataset_name}_{''.join(unique_identifiers)}_summary_df.csv"))
-    summary_df.to_csv(os.path.join(base_path, "combined_results", f"{dataset_name}_{representation}_{''.join(unique_identifiers)}_summary_df.csv"))
+    summary_df.to_csv(os.path.join(base_path, "combined_results", f"{dataset_name}_{transform}_{''.join(unique_identifiers)}_summary_df.csv"))
 
     print(f"Comparative markdown report generated: {output_file}")
 
