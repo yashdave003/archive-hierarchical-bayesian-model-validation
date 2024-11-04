@@ -5,7 +5,7 @@ testing-framework/__pycache__/
 *.pyc
 testing-framework/CDFs/optimize_cache.pickle
 testing-framework/__pycache__/utilities.cpython-312.pyc
-transformed-data/
+transformed-data/dataframes
 *.DS_Store
 .DS_Store
 .vscode/settings.json
