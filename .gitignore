@@ -10,3 +10,4 @@ transformed-data/dataframes
 .DS_Store
 .vscode/settings.json
 *group_cdf_df_dict_full.pickle
+raw-data/agriVision
