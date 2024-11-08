@@ -111,7 +111,7 @@ def generate_markdown_report(data_name):
 {master_df.filter(regex='.*_r$|.*_eta$|iter.*').to_markdown()}
 
 ### Parameter comparisons with other common priors (Gaussian, Laplace, Student t):
-{master_df.filter(regex='param_.*kstest_stat_.*[^0-9]$|kstest_stat_cutoff_.*').to_markdown()}
+{master_df.filter(regex='param.*|kstest_stat.*[^0-9]$|kstest_stat_cutoff.*').to_markdown()}
 
 ### All the columns you can access:
 {list(master_df.columns)}
