@@ -112,7 +112,7 @@ def getIndexDF(image, no_zero =False):
         coord_df = coord_df[(coord_df["x_freq"] != 0 )| (coord_df["y_freq"] != 0)]
     return coord_df
 
-def convert_fourier_list(folder_dir, c, coord_df = None, debug = False, image_opener = None):
+def convert_fourier_list(folder_dir, c, coord_df = None, debug = False, image_opener = None, image_func = None):
     file_list = [os.path.join(folder_dir, filename) for filename in os.listdir(folder_dir) if filename != ".DS_Store"]
     if image_opener!= None:
         image = rgb2gray(image_opener(file_list[0]))
@@ -140,6 +140,8 @@ def convert_fourier_list(folder_dir, c, coord_df = None, debug = False, image_op
                 image = image_opener(file_list[k])[:,:,c]
             else:
                 image = np.array(Image.open(file_list[k]))[:,:,c]
+        if image_func != None:
+            image = image_func(image)
 
         transformed = np.array(fft.fft2(image))
         freq_arr[k] = transformed[tuple(x), tuple(y)]
@@ -173,10 +175,10 @@ def recursive_split(freqs, mags, threshold =0.05, max_depth = 5, presplit = 0):
 
 
 
-def convert_to_fourier_basis(folder_dir, color, threshold =0.05, max_depth = 5, presplit = 0, combine_complex = True, split_list = None, coord_df = None, debug = False, image_opener = None):
+def convert_to_fourier_basis(folder_dir, color, threshold =0.05, max_depth = 5, presplit = 0, combine_complex = True, split_list = None, coord_df = None, debug = False, image_opener = None, image_func = None):
     color_dict = {"red":0, "green":1, "blue":2, "gray":3, "infrared": 4}
     c = color_dict[color]
-    freqs, mags = convert_fourier_list(folder_dir, c, coord_df = coord_df, debug = debug, image_opener= image_opener)
+    freqs, mags = convert_fourier_list(folder_dir, c, coord_df = coord_df, debug = debug, image_opener= image_opener, image_func = image_func)
     df = pd.DataFrame(columns=["band", "channel", "magnitude_endpoints","unique_magnitudes", "data"])
 
     if split_list == None:
