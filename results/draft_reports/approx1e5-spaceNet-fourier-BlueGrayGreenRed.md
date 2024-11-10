@@ -1,4 +1,4 @@
-# Comparative Analysis: SPACENET Dataset (Fourier) - 2024-11-07
+# Comparative Analysis: SPACENET Dataset (Fourier) - 2024-11-08
 ## Dataset Variations
 * **Variations compared:** approx1e5, approx1e5, approx1e5, approx1e5
 * **Image Type:** Green

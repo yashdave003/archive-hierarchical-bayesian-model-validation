@@ -7,7 +7,6 @@ import os
 ROOT_DIR = Path(git.Repo('.', search_parent_directories=True).working_tree_dir)
 
 os.chdir(os.path.join(ROOT_DIR, "utilities"))
-
 from testing import *
 os.chdir(os.path.join(ROOT_DIR, "results"))
 
@@ -61,13 +60,13 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
     if debug:
         print(f'You can find the CDFs here: {os.path.join(os.getcwd(), FOLDER_PATH)}')
 
-all_eta = np.arange(-1, 0, .1)
-all_r = np.append(np.arange(0.02, 2, 0.01), np.arange(2, 10.1, .1))
+all_eta = np.arange(-1.40, 0, 0.1)
+all_r = np.hstack([np.arange(0.02, 2, 0.01), np.arange(10, 50, 1)])
 n_samples = 1000
 tail_percent = 0.1
 tail_bound = 1e-5
 
-simple_add_cdfs(all_r, all_eta, n_samples = n_samples, folder_name='test',
+simple_add_cdfs(all_r, all_eta, n_samples = n_samples, folder_name='',
                 tail_percent = tail_percent, tail_bound = tail_bound, use_matlab=True, 
                 eng=eng, enforce_assert=False, return_assert=True, debug=False)
 

@@ -1,4 +1,4 @@
-# Comparative Analysis: SPACENET Dataset (Wavelet) - 2024-11-01
+# Comparative Analysis: SPACENET Dataset (Wavelet) - 2024-11-08
 ## Dataset Variations
 * **Variations compared:** approx1e5, approx1e5, approx1e5, approx1e5
 * **Image Type:** Green
