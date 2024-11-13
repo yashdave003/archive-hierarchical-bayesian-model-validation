@@ -11,3 +11,4 @@ git
 tabulate
 joblib
 ipywidgets
+nbformat
