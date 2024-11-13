@@ -68,7 +68,7 @@ tail_bound = 1e-5
 
 simple_add_cdfs(all_r, all_eta, n_samples = n_samples, folder_name='',
                 tail_percent = tail_percent, tail_bound = tail_bound, use_matlab=True, 
-                eng=eng, enforce_assert=False, return_assert=True, debug=True)
+                eng=eng, enforce_assert=False, return_assert=True, debug=False)
 
 all_eta = np.arange(-1, -0.5, 0.01)
 all_r = np.append(np.arange(0.1, 2, 0.1), np.arange(2, 10, 1))
@@ -78,7 +78,7 @@ tail_bound = 1e-5
 
 simple_add_cdfs(all_r, all_eta, n_samples = n_samples, folder_name='',
                 tail_percent = tail_percent, tail_bound = tail_bound, use_matlab=True, 
-                eng=eng, enforce_assert=False, return_assert=True, debug=True)
+                eng=eng, enforce_assert=False, return_assert=True, debug=False)
 
 all_eta = np.arange(-0.5, 0, 0.01)
 all_r = np.append(np.arange(0.1, 2, 0.1), np.arange(2, 10, 1))
@@ -88,7 +88,7 @@ tail_bound = 1e-5
 
 simple_add_cdfs(all_r, all_eta, n_samples = n_samples, folder_name='',
                 tail_percent = tail_percent, tail_bound = tail_bound, use_matlab=True, 
-                eng=eng, enforce_assert=False, return_assert=True, debug=True)
+                eng=eng, enforce_assert=False, return_assert=True, debug=False)
 
 if USE_MATLAB:
     eng.quit()
