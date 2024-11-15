@@ -45,7 +45,7 @@ def simple_add_cdfs(r_range, eta_range, folder_name = '', n_samples = 2000, tail
             computed_cdf = compute_prior_cdf(r = r, eta = eta, method = 'gamma_cdf', n_samples = n_samples, tail_percent = tail_percent, tail_bound = tail_bound, 
                                              use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, debug=debug)
             if computed_cdf is None:
-                with open("generate_CDF_log_yash.csv", 'a') as handle:
+                with open("generate_CDF_log.csv", 'a') as handle:
                     handle.write(f"{r}, {eta}, {n_samples}, failed assert\n")
                 continue
             r_cdf[(r, eta)] = computed_cdf
@@ -68,7 +68,7 @@ tail_bound = 1e-5
 
 simple_add_cdfs(all_r, all_eta, n_samples = n_samples, folder_name='',
                 tail_percent = tail_percent, tail_bound = tail_bound, use_matlab=True, 
-                eng=eng, enforce_assert=False, return_assert=True, debug=False)
+                eng=eng, enforce_assert=False, return_assert=True, debug=True)
 
 all_eta = np.arange(-1, -0.5, 0.01)
 all_r = np.append(np.arange(0.1, 2, 0.1), np.arange(2, 10, 1))
@@ -78,7 +78,7 @@ tail_bound = 1e-5
 
 simple_add_cdfs(all_r, all_eta, n_samples = n_samples, folder_name='',
                 tail_percent = tail_percent, tail_bound = tail_bound, use_matlab=True, 
-                eng=eng, enforce_assert=False, return_assert=True, debug=False)
+                eng=eng, enforce_assert=False, return_assert=True, debug=True)
 
 all_eta = np.arange(-0.5, 0, 0.01)
 all_r = np.append(np.arange(0.1, 2, 0.1), np.arange(2, 10, 1))
@@ -88,7 +88,7 @@ tail_bound = 1e-5
 
 simple_add_cdfs(all_r, all_eta, n_samples = n_samples, folder_name='',
                 tail_percent = tail_percent, tail_bound = tail_bound, use_matlab=True, 
-                eng=eng, enforce_assert=False, return_assert=True, debug=False)
+                eng=eng, enforce_assert=False, return_assert=True, debug=True)
 
 if USE_MATLAB:
     eng.quit()
