@@ -98,7 +98,7 @@ def compute_prior_pdf_using_numerical_old(r, eta, n_samples = 10000, tail_bound 
             return (1./(np.sqrt(2*np.pi)*np.sqrt(theta))) * np.exp(-0.5*(x**2/theta)) * (np.abs(r)/scipy.special.gamma(beta)) * (1/scale) * (theta/scale)**(r*beta - 1) * np.exp(-(theta/scale)**r)
 
         if use_matlab: 
-            prior_pdf[j] = eng.compute_prior(float(r), float(eta), float(x), nargout=1)
+            prior_pdf[j] = eng.compute_prior_using_numerical_old(float(r), float(eta), float(x), nargout=1)
         else:
             prior_pdf[j] = integrate.quad(integrand, 0, np.inf)[0]
 
