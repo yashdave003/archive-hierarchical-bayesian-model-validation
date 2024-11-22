@@ -12,7 +12,7 @@ from PIL import Image
 import scipy.special
 from tqdm import tqdm
 import git 
-
+np.set_printoptions(formatter={'all': lambda x: str(x)})
 
 USE_MATLAB= True
 if USE_MATLAB:
