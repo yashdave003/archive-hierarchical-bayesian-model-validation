@@ -5,7 +5,7 @@ PyWavelets==1.7.0
 Pillow==10.4.0
 tqdm==4.66.5
 seaborn==0.13.2
-matplotlib
+matplotlib==3.9.2
 nibabel==5.2.1
 git 
 tabulate
