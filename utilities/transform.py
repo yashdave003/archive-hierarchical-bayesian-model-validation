@@ -18,7 +18,6 @@ from time import sleep
 from tqdm import tqdm
 np.set_printoptions(formatter={'all': lambda x: str(x)})
 
-
 def npz_opener(path):
     npz_file = np.load(path)
     array_data = npz_file[npz_file.files[0]]
@@ -92,9 +91,9 @@ def convert_to_wavelet_basis(folder_dir, color, basis="db1", image_func = None, 
     df["layer"] = layer_arr
     df["orientation"] = orientation
     df["data"] = data_arr
-    new_df = pd.DataFrame(columns=["channel","layer", "orientation", "data"])
+    new_df = pd.DataFrame(columns=["channel","layer", "frequency", "orientation", "data"])
     for lo, sf in df.groupby(["layer", "orientation"])[["data"]]:#.agg(lambda sf: np.concatenate(sf["Data"].tonumpy()))
-        new_df.loc[len(new_df.index)] = [color, lo[0], lo[1],  np.hstack(sf['data'])]
+        new_df.loc[len(new_df.index)] = [color, lo[0], pywt.scale2frequency(basis,layer_len - (lo[0]-1)),lo[1],  np.hstack(sf['data'])]
     
     return new_df
 
@@ -198,6 +197,9 @@ def convert_to_fourier_basis(folder_dir, color, threshold =0.05, max_depth = 5, 
         loop = range(len(mag_splits))
     for i in loop:
         next_idx = np.argmax(mags>=sorted_mag_split[i])
+        if next_idx == 0:
+            next_idx = len(mags)
+
         if combine_complex:
             next_freqs = np.concatenate([np.real(freqs[prev:next_idx]),np.imag(freqs[prev:next_idx])])
         else:
@@ -214,11 +216,11 @@ def convert_to_fourier_basis(folder_dir, color, threshold =0.05, max_depth = 5, 
     return df
 
 def getSplits(minfreq, maxfreq, mult):
-    arr = []
+    arr = [minfreq]
     next_freq = minfreq
     while next_freq < maxfreq:
-        arr.append(next_freq)
         next_freq *= mult
+        arr.append(next_freq)
     return arr
 
 def getIndexDF_3d(image, no_zero =False):
@@ -284,6 +286,8 @@ def convert_to_fourier_basis_3d(folder_dir, threshold =0.05, max_depth = 5, pres
 
     for i in loop:
         next_idx = np.argmax(mags>=sorted_mag_split[i])
+        if next_idx == 0:
+            next_idx = len(mags)
         if combine_complex:
             next_freqs = np.concatenate([np.real(freqs[prev:next_idx]),np.imag(freqs[prev:next_idx])])
         else:
@@ -373,9 +377,9 @@ def convert_to_wavelet_basis_3d(folder_dir, basis="db1", image_func = None, debu
     df["layer"] = layer_arr
     df["orientation"] = orientation
     df["data"] = data_arr
-    new_df = pd.DataFrame(columns=["layer", "orientation", "data"])
+    new_df = pd.DataFrame(columns=["layer", "frequency", "orientation", "data"])
     for lo, sf in df.groupby(["layer", "orientation"])[["data"]]:#.agg(lambda sf: np.concatenate(sf["Data"].tonumpy()))
-        new_df.loc[len(new_df.index)] = [lo[0], lo[1],  np.hstack(sf['data'])]
+        new_df.loc[len(new_df.index)] = [lo[0], pywt.scale2frequency(basis,lo[0]), lo[1],  np.hstack(sf['data'])]
     
     return new_df
 
