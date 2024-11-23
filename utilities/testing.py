@@ -12,8 +12,7 @@ from PIL import Image
 import scipy.special
 from tqdm import tqdm
 import git 
-np.set_printoptions(formatter={'all': lambda x: str(x)})
-np.set_printoptions(legacy='1.26')
+np.set_printoptions(legacy='1.25')
 
 USE_MATLAB= True
 if USE_MATLAB:

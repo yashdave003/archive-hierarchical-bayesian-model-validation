@@ -16,7 +16,7 @@ import nibabel as nib
 from scipy import ndimage
 from time import sleep
 from tqdm import tqdm
-np.set_printoptions(formatter={'all': lambda x: str(x)})
+
 
 def npz_opener(path):
     npz_file = np.load(path)
