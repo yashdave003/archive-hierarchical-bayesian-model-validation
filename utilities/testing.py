@@ -48,10 +48,10 @@ def compute_cdf_vals(r, beta, xs, use_matlab = True, debug = False):
             prior_cdf[j] = res
     return prior_cdf
 
-def compute_prior_pdf(r, eta, method='gamma_cdf', n_samples = 10000, tail_bound = 0.01, tail_percent = 0.1, scale = 1, use_matlab=False, eng=None, debug=False, enforce_assert=True, return_assert=False):
+def compute_prior_pdf(r, eta, method='gamma_cdf', n_samples = 1000, tail_bound = 0.001, tail_percent = 0.1, scale = 1, use_matlab=True, eng=None, debug=False, enforce_assert=True, return_assert=False):
     
     if method == 'gamma_cdf':
-        xs, cdf = compute_prior_cdf_using_gamma_cdf(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=True)
+        xs, cdf = compute_prior_cdf(r=r, eta=eta, method='gamma_cdf', n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=True, debug=debug)
         return xs, cdf.derivative()
     elif method == 'normal_cdf':
         xs, cdf = compute_prior_cdf_using_normal_cdf(r=r, eta=eta, n_samples=n_samples, tail_bound=tail_bound, tail_percent=tail_percent, scale=scale, use_matlab=use_matlab, eng=eng, enforce_assert=enforce_assert, return_assert=return_assert, return_xs=True)

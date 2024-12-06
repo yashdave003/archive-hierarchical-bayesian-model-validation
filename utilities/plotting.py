@@ -377,9 +377,9 @@ def visualize_cdf_pdf(params, sample=[], distro = 'gengamma', log_scale = True, 
             location = result.statistic_location
             emp_cdf_at_loc = np.searchsorted(sample, location, side='right') / n
             computed_cdf_at_loc = null_cdf(location)
-        ax1.plot(xs, null_cdf(xs), label='Computed CDF')
+            ax1.plot(xs, null_cdf(xs), label='Computed CDF')
+            ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
         
-        ax1.vlines(location, emp_cdf_at_loc, computed_cdf_at_loc, linestyles='--', label=f'Maximum Deviation: {np.round(distance, 6)}\nat x={np.round(location, 6)}', color='xkcd:bright red')
         if len(sample) > 0 and provided_loc:
             emp_cdf_at_provided_loc = np.searchsorted(sample, provided_loc, side='right') / n
             computed_cdf_at_provided_loc = null_cdf(provided_loc)
