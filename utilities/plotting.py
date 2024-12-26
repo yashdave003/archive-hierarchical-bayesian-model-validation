@@ -89,7 +89,7 @@ def create_scatter_plot(df, metric=None):
 
         ax.set_title(f'(r, eta) pairs colored by {metric}')
     else:
-        sns.scatterplot(x=df['r'], y=df['eta'], color='xkcd:shamrock green', alpha=0.5, ax=ax, edgecolor='none')
+        sns.scatterplot(x=df['r'], y=df['eta'], color='xkcd:gray', alpha=0.5, ax=ax, edgecolor='none')
         ax.set_title('(r, eta) pairs for which CDFs are computed (Linear eta)')
 
     ax.set_xlabel('r')
