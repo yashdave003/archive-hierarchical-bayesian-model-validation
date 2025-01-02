@@ -465,7 +465,7 @@ def compute_prior_cdf_using_normal_cdf(r, eta, n_samples = 2000, tail_bound = 0.
     else:
         return cdf_spline
 
-def sample_prior(r, eta, size=1):
+def sample_prior(r, eta, size=1, scale=1):
     '''
     Samples from prior distribution of signal x
     r : shape parameter, must be nonzero
@@ -477,7 +477,7 @@ def sample_prior(r, eta, size=1):
     '''
     beta = (eta + 1.5)/r
     assert beta > 0
-    vars = stats.gengamma.rvs(a = beta, c = r, size = size)
+    vars = stats.gengamma.rvs(a = beta, c = r, scale=scale, size = size)
     x = np.random.normal(scale = np.sqrt(vars), size=size)
     return x
 
