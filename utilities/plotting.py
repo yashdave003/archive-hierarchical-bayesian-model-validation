@@ -368,7 +368,7 @@ def visualize_cdf_pdf(params, sample=[], distro = 'gengamma', log_scale = True, 
     elif distro == 'laplace':
         null_cdf = stats.laplace(scale=params).cdf
         xs_pdf = np.linspace(-30, 30, 10000)
-        null_pdf = stats.laplace(scale=params).pdf(xs)
+        null_pdf = stats.laplace(scale=params).pdf(xs_pdf)
 
     if log_scale:
 
