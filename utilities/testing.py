@@ -24,21 +24,27 @@ else:
 def get_project_root():
     return Path(git.Repo('.', search_parent_directories=True).working_tree_dir)
 
-def compute_cdf_vals(r, beta, xs, use_matlab = True, debug = False):
+def compute_cdf_vals(r, beta, scale, xs, use_matlab = True, debug = False):
     prior_cdf = np.zeros_like(xs)
     if use_matlab:
         if debug:
             for j in tqdm(range(len(xs))):
-                prior_cdf[j] = eng.compute_cdf_using_gengamma(float(r), float(beta), float(xs[j]), nargout=1)
+                if scale == 1:
+                    prior_cdf[j] = eng.compute_cdf_using_gengamma(float(r), float(beta), float(xs[j]), nargout=1)
+                else:
+                    prior_cdf[j] = eng.compute_cdf_using_gengamma_with_scale(float(r), float(beta), float(scale), float(xs[j]), nargout=1)
         else:
             for j, x in enumerate(xs):
-                prior_cdf[j] = eng.compute_cdf_using_gengamma(float(r), float(beta), float(x), nargout=1)
+                if scale == 1:
+                    prior_cdf[j] = eng.compute_cdf_using_gengamma(float(r), float(beta), float(xs[j]), nargout=1)
+                else:
+                    prior_cdf[j] = eng.compute_cdf_using_gengamma_with_scale(float(r), float(beta), float(scale), float(xs[j]), nargout=1)
     else:
         def gauss_density(z, x):
             return np.exp(-0.5 * (x/z)**2) / (np.sqrt(2*np.pi) * z)
 
         def gen_gamma_cdf(x):
-            return prior_cdf.gammainc(beta, x**r)
+            return prior_cdf.gammainc(beta, (x/scale)**r)
 
         def integrand(z, x):
             return gauss_density(z, x) * (1 - gen_gamma_cdf((x/z)**2))
@@ -193,7 +199,7 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples=1000, tail_bound=0.001, 
     xs_minus = np.concatenate((-np.logspace(np.log10(cheby), 2, n_tail),
                                np.linspace(-x_max, 0, n_samples//2-n_tail)))
 
-    prior_cdf_minus = compute_cdf_vals(r, beta, xs_minus, use_matlab = use_matlab, debug = debug)
+    prior_cdf_minus = compute_cdf_vals(r, beta, scale=scale, xs = xs_minus, use_matlab = use_matlab, debug = debug)
 
     if debug:
         print("Maximum Diff in y-values:", max(abs(np.diff(prior_cdf_minus))))
@@ -210,7 +216,7 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples=1000, tail_bound=0.001, 
             inv_linspline = interpolate.InterpolatedUnivariateSpline(x= filtered_y, y= filtered_x, k=1, ext='const')
             xs_add = inv_linspline(np.linspace(0, 0.5, n_samples//2))
             
-            prior_cdf_add = compute_cdf_vals(r, beta, xs_add, use_matlab = use_matlab, debug = debug)
+            prior_cdf_add = compute_cdf_vals(r, beta, scale=scale, xs = xs_add, use_matlab = use_matlab, debug = debug)
 
             xs_minus, idx_merge = np.unique(np.append(xs_minus, xs_add), return_index = True)
             prior_cdf_minus = np.sort(np.append(prior_cdf_minus, prior_cdf_add)[idx_merge])
@@ -244,7 +250,7 @@ def compute_prior_cdf_using_gamma_cdf(r, eta, n_samples=1000, tail_bound=0.001, 
     cdf_spline = interpolate.InterpolatedUnivariateSpline(x=xs, y=prior_cdf, k=3, ext='const')
 
     if return_assert or enforce_assert:
-        x = np.sort(sample_prior(r, eta, 10000))
+        x = np.sort(sample_prior(r, eta, 10000, scale=scale))
         res = stats.ks_1samp(x, cdf_spline)
         if debug:
             print(res)
