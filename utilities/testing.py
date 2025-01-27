@@ -604,7 +604,7 @@ def gridsearch(sample, all_cdfs, top_k = 1, debug = False, rescale = False):
     for i in loop:
         if rescale:
             r, eta = cdf_keys[i]
-            ksstats[i] = compute_ksstat(sample / np.sqrt(get_rescale_val(r=r, eta=eta, scale=empirical_var)), cdf_splines[i])
+            ksstats[i] = compute_ksstat(sample / np.sqrt(get_rescale_val(r=r, eta=eta, sample_var=empirical_var)), cdf_splines[i])
         else:
             ksstats[i] = compute_ksstat(sample, cdf_splines[i])
     
