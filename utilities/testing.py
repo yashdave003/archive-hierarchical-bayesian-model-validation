@@ -586,7 +586,7 @@ def compute_ksratio(sample, cdf, sorted_sample = True, tail_cutoff = 0):
     return (round_to_sigfigs(np.min(tail_ratios)), round_to_sigfigs(np.max(tail_ratios)))
 
 
-def gridsearch(sample, all_cdfs, top_k = 1, debug = False):
+def gridsearch(sample, all_cdfs, top_k = 1, debug = False, rescale = False):
     '''
     Takes in a sample and list of CDFs, 
     Returns the KS-Test Statistic computed with respect to each CDF, the top-k minimizing parameters and the corresponding distances
@@ -595,13 +595,18 @@ def gridsearch(sample, all_cdfs, top_k = 1, debug = False):
     cdf_splines = [all_cdfs[key] for key in cdf_keys]
     num_cdfs = len(cdf_keys)
     ksstats = np.zeros(num_cdfs)
+    empirical_var = np.var(sample)
     
     if debug:
         loop = tqdm(range(num_cdfs))
     else:
         loop = range(num_cdfs)
     for i in loop:
-        ksstats[i] = compute_ksstat(sample, cdf_splines[i])
+        if rescale:
+            r, eta = cdf_keys[i]
+            ksstats[i] = compute_ksstat(sample / np.sqrt(get_rescale_val(r=r, eta=eta, scale=empirical_var)), cdf_splines[i])
+        else:
+            ksstats[i] = compute_ksstat(sample, cdf_splines[i])
     
     min_k = 2*np.ones(top_k).astype(int)
     if debug:
@@ -824,9 +829,12 @@ def variance_prior(r, eta, scale=1):
     var_prior = scale * scipy.special.gamma(beta + 1/r)/scipy.special.gamma(beta)
     return var_prior
 
-def kurtosis_prior(r, eta, fisher=True):
+def get_rescale_val(r, eta, sample_var):
+    return sample_var/variance_prior(r, eta, scale = 1)
+
+def kurtosis_prior(r, eta, scale=1, fisher=True):
     beta = (eta+1.5)/r
-    kurtosis = 3*scipy.special.gamma(beta + 2/r)*scipy.special.gamma(beta)/scipy.special.gamma(beta+1/r)**2 
+    kurtosis = scale*3*scipy.special.gamma(beta + 2/r)*scipy.special.gamma(beta)/scipy.special.gamma(beta+1/r)**2 
     if fisher:
         return kurtosis - 3
     else:
@@ -867,7 +875,8 @@ def create_kurt_var_ksstat_df(cdf_dict):
     cdfs_df['kurtosis'] = cdfs_df.apply(lambda row : kurtosis_prior(row.loc['r'], row.loc['eta']), axis = 1)
     return cdfs_df
 
-def add_tests_to_df(cdfs_df, group, var_kurt_df, ksstats):
+def add_tests_to_df(cdfs_df, group, var_kurt_df, ksstats, rescale=False):
+
     cdfs_df['pass_var'] = (cdfs_df['variance'] > var_kurt_df.loc[group, 'var_lower']) & (cdfs_df['variance'] < var_kurt_df.loc[group, 'var_upper'])
     cdfs_df['pass_kurt'] = (cdfs_df['kurtosis'] > var_kurt_df.loc[group, 'kurt_lower']) & (cdfs_df['kurtosis'] < var_kurt_df.loc[group,'kurt_upper'])
     cdfs_df['ksstat'] = ksstats
