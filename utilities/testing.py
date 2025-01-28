@@ -586,7 +586,7 @@ def compute_ksratio(sample, cdf, sorted_sample = True, tail_cutoff = 0):
     return (round_to_sigfigs(np.min(tail_ratios)), round_to_sigfigs(np.max(tail_ratios)))
 
 
-def gridsearch(sample, all_cdfs, top_k = 1, debug = False, rescale = False):
+def gridsearch(sample, all_cdfs, top_k = 1, debug = False, scales = None):
     '''
     Takes in a sample and list of CDFs, 
     Returns the KS-Test Statistic computed with respect to each CDF, the top-k minimizing parameters and the corresponding distances
@@ -602,9 +602,10 @@ def gridsearch(sample, all_cdfs, top_k = 1, debug = False, rescale = False):
     else:
         loop = range(num_cdfs)
     for i in loop:
-        if rescale:
+        if scales is not None:
             r, eta = cdf_keys[i]
-            ksstats[i] = compute_ksstat(sample / np.sqrt(get_rescale_val(r=r, eta=eta, sample_var=empirical_var)), cdf_splines[i])
+            scale = scales[i]
+            ksstats[i] = compute_ksstat(sample / np.sqrt(scale), cdf_splines[i])
         else:
             ksstats[i] = compute_ksstat(sample, cdf_splines[i])
     
