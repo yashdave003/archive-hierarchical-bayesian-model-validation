@@ -5,7 +5,6 @@ from scipy import integrate, interpolate, stats, special
 from pathlib import Path
 import pickle
 import os
-import pywt
 import pywt.data
 from PIL import Image
 

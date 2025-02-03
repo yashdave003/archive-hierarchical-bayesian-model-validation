@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.lines import Line2D
 from testing import *
-from joblib import Parallel, delayed
 
 GROUP_NAME = 'Group (Layer/Band)'
 
@@ -538,37 +537,6 @@ def nearby_df_parallel_process(r_prime, eta_prime, prior_cdf, n, ks_max, iterati
     avg_pvalue = total_pvalue / iterations
     
     return [r_prime, eta_prime, avg_distance, avg_pvalue]
-
-def nearby_df(r, eta, n=10000, ks_max=100000, r_bound=0.01, eta_bound=0.1, grid_amt=5, iterations=10, rounded=3, parallelize = True, prior_cdf = None):
-    if prior_cdf == None:
-        prior_cdf = compute_prior_cdf(r, eta, n_samples=1000, tail_percent=0.1, tail_bound=0.0001, debug=False, use_matlab=True, eng=eng)
-    check_r = np.linspace(r - r_bound, r + r_bound, 2 * grid_amt + 1)
-    check_eta = np.linspace(eta - eta_bound, eta + eta_bound, 2 * grid_amt + 1) 
-    if parallelize:
-        results = Parallel(n_jobs=-1)(delayed(nearby_df_parallel_process)(r_prime, eta_prime, prior_cdf, n, ks_max, iterations, rounded) 
-                                    for r_prime in check_r for eta_prime in check_eta)
-
-        df = pd.DataFrame(results, columns=["r", "eta", "distance", "pvalue"])
-    else:
-        df = pd.DataFrame(columns = ["r", "eta", "distance", "pvalue"])
-        for r_prime in check_r:
-            for eta_prime in check_eta:
-                total_distance, total_pvalue = 0, 0
-                r_prime = np.round(r_prime, rounded)
-                eta_prime = np.round(eta_prime, rounded)
-                for _ in range(iterations):
-                    obs_x = sample_prior(r_prime, eta_prime, size = n)
-                    filtered_x = np.sort(obs_x)[np.round(np.linspace(0, obs_x.size - 1, min(obs_x.size, ks_max))).astype(int)] 
-                    distance, _ = kstest_custom(filtered_x, prior_cdf)
-                    pvalue = 1 - stats.kstwo(n=n).cdf(distance)
-                    total_distance += distance
-                    total_pvalue += pvalue
-                
-                avg_distance = total_distance/iterations
-                avg_pvalue = total_pvalue/iterations
-                df.loc[len(df)] = [r_prime, eta_prime, avg_distance, avg_pvalue]
-    return df
-
 
 def plotKSHeatMap(df, r, eta, grid_amt= 5, pval =True, dist = True, title = "", plot_fig = True):
     if dist:

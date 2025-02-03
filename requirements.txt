@@ -9,6 +9,5 @@ matplotlib==3.9.2
 nibabel==5.2.1
 git 
 tabulate
-joblib
 ipywidgets
 nbformat
